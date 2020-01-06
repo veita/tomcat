@@ -1070,22 +1070,13 @@ public class Tomcat {
      */
     public static void initWebappDefaults(Context ctx) {
         // Default servlet
-        Wrapper servlet = addServlet(
+        final Wrapper servlet = addServlet(
                 ctx, "default", "org.apache.catalina.servlets.DefaultServlet");
         servlet.setLoadOnStartup(1);
         servlet.setOverridable(true);
 
-        // JSP servlet (by class name - to avoid loading all deps)
-        servlet = addServlet(
-                ctx, "jsp", "org.apache.jasper.servlet.JspServlet");
-        servlet.addInitParameter("fork", "false");
-        servlet.setLoadOnStartup(3);
-        servlet.setOverridable(true);
-
         // Servlet mappings
         ctx.addServletMappingDecoded("/", "default");
-        ctx.addServletMappingDecoded("*.jsp", "jsp");
-        ctx.addServletMappingDecoded("*.jspx", "jsp");
 
         // Sessions
         ctx.setSessionTimeout(30);
@@ -1099,7 +1090,6 @@ public class Tomcat {
         // Welcome files
         ctx.addWelcomeFile("index.html");
         ctx.addWelcomeFile("index.htm");
-        ctx.addWelcomeFile("index.jsp");
     }
 
 
