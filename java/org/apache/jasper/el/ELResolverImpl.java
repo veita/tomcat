@@ -14,18 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.jasper.el;
 
 import java.util.Iterator;
 import java.util.Objects;
 
-import javax.el.ELContext;
-import javax.el.ELException;
-import javax.el.ELResolver;
-import javax.el.ExpressionFactory;
-import javax.el.PropertyNotWritableException;
-import javax.servlet.jsp.el.VariableResolver;
+import jakarta.el.ELContext;
+import jakarta.el.ELException;
+import jakarta.el.ELResolver;
+import jakarta.el.ExpressionFactory;
+import jakarta.el.PropertyNotWritableException;
+import jakarta.servlet.jsp.el.VariableResolver;
 
 @Deprecated
 public final class ELResolverImpl extends ELResolver {
@@ -49,7 +48,7 @@ public final class ELResolverImpl extends ELResolver {
                 try {
                     return this.variableResolver.resolveVariable(property
                             .toString());
-                } catch (javax.servlet.jsp.el.ELException e) {
+                } catch (jakarta.servlet.jsp.el.ELException e) {
                     throw new ELException(e.getMessage(), e.getCause());
                 }
             }
@@ -72,7 +71,7 @@ public final class ELResolverImpl extends ELResolver {
                     Object obj = this.variableResolver.resolveVariable(property
                             .toString());
                     return (obj != null) ? obj.getClass() : null;
-                } catch (javax.servlet.jsp.el.ELException e) {
+                } catch (jakarta.servlet.jsp.el.ELException e) {
                     throw new ELException(e.getMessage(), e.getCause());
                 }
             }

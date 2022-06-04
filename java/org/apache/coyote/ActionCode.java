@@ -14,7 +14,6 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-
 package org.apache.coyote;
 
 /**
@@ -77,6 +76,11 @@ public enum ActionCode {
     REQ_HOST_ADDR_ATTRIBUTE,
 
     /**
+     * Callback for lazy evaluation - extract the connection peer address.
+     */
+    REQ_PEER_ADDR_ATTRIBUTE,
+
+    /**
      * Callback for lazy evaluation - extract the SSL-related attributes
      * including the client certificate if present.
      */
@@ -125,7 +129,7 @@ public enum ActionCode {
 
     /**
      * Callback for an async call to
-     * {@link javax.servlet.AsyncContext#dispatch()}.
+     * {@link jakarta.servlet.AsyncContext#dispatch()}.
      */
     ASYNC_DISPATCH,
 
@@ -137,13 +141,13 @@ public enum ActionCode {
 
     /**
      * Callback for an async call to
-     * {@link javax.servlet.AsyncContext#start(Runnable)}.
+     * {@link jakarta.servlet.AsyncContext#start(Runnable)}.
      */
     ASYNC_RUN,
 
     /**
      * Callback for an async call to
-     * {@link javax.servlet.AsyncContext#complete()}.
+     * {@link jakarta.servlet.AsyncContext#complete()}.
      */
     ASYNC_COMPLETE,
 
@@ -159,7 +163,7 @@ public enum ActionCode {
 
     /**
      * Callback for an async call to
-     * {@link javax.servlet.AsyncContext#setTimeout(long)}
+     * {@link jakarta.servlet.AsyncContext#setTimeout(long)}
      */
     ASYNC_SETTIMEOUT,
 
@@ -265,5 +269,18 @@ public enum ActionCode {
      * once an HTTP/1.1 response has been committed, it will no longer support
      * trailer fields.
      */
-    IS_TRAILER_FIELDS_SUPPORTED
+    IS_TRAILER_FIELDS_SUPPORTED,
+
+    /**
+     * Obtain the request identifier for this request as defined by the protocol
+     * in use. Note that some protocols do not define such an identifier. E.g.
+     * this will be Stream ID for HTTP/2.
+     */
+    PROTOCOL_REQUEST_ID,
+
+    /**
+     * Obtain the servlet connection instance for the network connection
+     * supporting the current request.
+     */
+    SERVLET_CONNECTION
 }

@@ -315,8 +315,7 @@ public class HPackHuffman {
         HuffmanCode[] currentCode = new HuffmanCode[256];
         currentCode[0] = new HuffmanCode(0, 0);
 
-        final Set<HuffmanCode> allCodes = new HashSet<>();
-        allCodes.addAll(Arrays.asList(HUFFMAN_CODES));
+        final Set<HuffmanCode> allCodes = new HashSet<>(Arrays.asList(HUFFMAN_CODES));
 
         while (!allCodes.isEmpty()) {
             int length = currentCode[pos].length;
@@ -556,13 +555,21 @@ public class HPackHuffman {
         public boolean equals(Object o) {
 
 
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
 
             HuffmanCode that = (HuffmanCode) o;
 
-            if (length != that.length) return false;
-            if (value != that.value) return false;
+            if (length != that.length) {
+                return false;
+            }
+            if (value != that.value) {
+                return false;
+            }
 
             return true;
         }

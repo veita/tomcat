@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.catalina.Globals;
 import org.apache.catalina.security.SecurityClassLoad;
 import org.apache.catalina.startup.ClassLoaderFactory.Repository;
 import org.apache.catalina.startup.ClassLoaderFactory.RepositoryType;
@@ -59,14 +58,14 @@ public final class Bootstrap {
     private static final File catalinaBaseFile;
     private static final File catalinaHomeFile;
 
-    private static final Pattern PATH_PATTERN = Pattern.compile("(\".*?\")|(([^,])*)");
+    private static final Pattern PATH_PATTERN = Pattern.compile("(\"[^\"]*\")|(([^,])*)");
 
     static {
         // Will always be non-null
         String userDir = System.getProperty("user.dir");
 
         // Home first
-        String home = System.getProperty(Globals.CATALINA_HOME_PROP);
+        String home = System.getProperty(Constants.CATALINA_HOME_PROP);
         File homeFile = null;
 
         if (home != null) {
@@ -105,10 +104,10 @@ public final class Bootstrap {
 
         catalinaHomeFile = homeFile;
         System.setProperty(
-                Globals.CATALINA_HOME_PROP, catalinaHomeFile.getPath());
+                Constants.CATALINA_HOME_PROP, catalinaHomeFile.getPath());
 
         // Then base
-        String base = System.getProperty(Globals.CATALINA_BASE_PROP);
+        String base = System.getProperty(Constants.CATALINA_BASE_PROP);
         if (base == null) {
             catalinaBaseFile = catalinaHomeFile;
         } else {
@@ -121,7 +120,7 @@ public final class Bootstrap {
             catalinaBaseFile = baseFile;
         }
         System.setProperty(
-                Globals.CATALINA_BASE_PROP, catalinaBaseFile.getPath());
+                Constants.CATALINA_BASE_PROP, catalinaBaseFile.getPath());
     }
 
     // -------------------------------------------------------------- Variables
@@ -161,8 +160,9 @@ public final class Bootstrap {
         throws Exception {
 
         String value = CatalinaProperties.getProperty(name + ".loader");
-        if ((value == null) || (value.equals("")))
+        if ((value == null) || (value.equals(""))) {
             return parent;
+        }
 
         value = replace(value);
 
@@ -222,9 +222,9 @@ public final class Bootstrap {
                 String replacement;
                 if (propName.length() == 0) {
                     replacement = null;
-                } else if (Globals.CATALINA_HOME_PROP.equals(propName)) {
+                } else if (Constants.CATALINA_HOME_PROP.equals(propName)) {
                     replacement = getCatalinaHome();
-                } else if (Globals.CATALINA_BASE_PROP.equals(propName)) {
+                } else if (Constants.CATALINA_BASE_PROP.equals(propName)) {
                     replacement = getCatalinaBase();
                 } else {
                     replacement = System.getProperty(propName);
@@ -256,14 +256,16 @@ public final class Bootstrap {
         SecurityClassLoad.securityClassLoad(catalinaLoader);
 
         // Load our startup class and call its process() method
-        if (log.isDebugEnabled())
+        if (log.isDebugEnabled()) {
             log.debug("Loading startup class");
+        }
         Class<?> startupClass = catalinaLoader.loadClass("org.apache.catalina.startup.Catalina");
         Object startupInstance = startupClass.getConstructor().newInstance();
 
         // Set the shared extensions class loader
-        if (log.isDebugEnabled())
+        if (log.isDebugEnabled()) {
             log.debug("Setting startup class properties");
+        }
         String methodName = "setParentClassLoader";
         Class<?> paramTypes[] = new Class[1];
         paramTypes[0] = Class.forName("java.lang.ClassLoader");
@@ -542,9 +544,13 @@ public final class Bootstrap {
 
 
     // Copied from ExceptionUtils since that class is not visible during start
-    private static void handleThrowable(Throwable t) {
+    static void handleThrowable(Throwable t) {
         if (t instanceof ThreadDeath) {
             throw (ThreadDeath) t;
+        }
+        if (t instanceof StackOverflowError) {
+            // Swallow silently - it should be recoverable
+            return;
         }
         if (t instanceof VirtualMachineError) {
             throw (VirtualMachineError) t;
@@ -552,6 +558,13 @@ public final class Bootstrap {
         // All other instances of Throwable will be silently swallowed
     }
 
+    // Copied from ExceptionUtils so that there is no dependency on utils
+    static Throwable unwrapInvocationTargetException(Throwable t) {
+        if (t instanceof InvocationTargetException && t.getCause() != null) {
+            return t.getCause();
+        }
+        return t;
+    }
 
     // Protected for unit testing
     protected static String[] getPaths(String value) {
@@ -581,7 +594,7 @@ public final class Bootstrap {
                 // Too early to use standard i18n support. The class path hasn't
                 // been configured.
                 throw new IllegalArgumentException(
-                        "The double quote [\"] character only be used to quote paths. It must " +
+                        "The double quote [\"] character can only be used to quote paths. It must " +
                         "not appear in a path. This loader path is not valid: [" + value + "]");
             } else {
                 // Not quoted - NO-OP
@@ -590,6 +603,6 @@ public final class Bootstrap {
             result.add(path);
         }
 
-        return result.toArray(new String[result.size()]);
+        return result.toArray(new String[0]);
     }
 }

@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.jasper.compiler;
 
 import java.io.IOException;
@@ -23,14 +22,15 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Vector;
 
-import javax.el.MethodExpression;
-import javax.el.ValueExpression;
-import javax.servlet.jsp.tagext.TagAttributeInfo;
-import javax.servlet.jsp.tagext.TagFileInfo;
-import javax.servlet.jsp.tagext.TagInfo;
-import javax.servlet.jsp.tagext.TagLibraryInfo;
-import javax.servlet.jsp.tagext.TagVariableInfo;
-import javax.servlet.jsp.tagext.VariableInfo;
+import jakarta.el.MethodExpression;
+import jakarta.el.ValueExpression;
+import jakarta.servlet.jsp.tagext.JspFragment;
+import jakarta.servlet.jsp.tagext.TagAttributeInfo;
+import jakarta.servlet.jsp.tagext.TagFileInfo;
+import jakarta.servlet.jsp.tagext.TagInfo;
+import jakarta.servlet.jsp.tagext.TagLibraryInfo;
+import jakarta.servlet.jsp.tagext.TagVariableInfo;
+import jakarta.servlet.jsp.tagext.VariableInfo;
 
 import org.apache.jasper.JasperException;
 import org.apache.jasper.JspCompilationContext;
@@ -68,7 +68,8 @@ class TagFileProcessor {
                 new JspUtil.ValidAttribute("import"),
                 new JspUtil.ValidAttribute("deferredSyntaxAllowedAsLiteral"), // JSP 2.1
                 new JspUtil.ValidAttribute("trimDirectiveWhitespaces"), // JSP 2.1
-                new JspUtil.ValidAttribute("isELIgnored") };
+                new JspUtil.ValidAttribute("isELIgnored"),
+                new JspUtil.ValidAttribute("errorOnELNotFound") };
 
         private static final JspUtil.ValidAttribute[] attributeDirectiveAttrs = {
                 new JspUtil.ValidAttribute("name", true),
@@ -252,7 +253,7 @@ class TagFileProcessor {
                 // type is fixed to "JspFragment" and a translation error
                 // must occur if specified.
                 if (type != null) {
-                    err.jspError(n, "jsp.error.fragmentwithtype");
+                    err.jspError(n, "jsp.error.fragmentwithtype", JspFragment.class.getName());
                 }
                 // rtexprvalue is fixed to "true" and a translation error
                 // must occur if specified.
@@ -261,8 +262,9 @@ class TagFileProcessor {
                     err.jspError(n, "jsp.error.frgmentwithrtexprvalue");
                 }
             } else {
-                if (type == null)
+                if (type == null) {
                     type = "java.lang.String";
+                }
 
                 if (deferredValue) {
                     type = ValueExpression.class.getName();
@@ -308,13 +310,15 @@ class TagFileProcessor {
             }
 
             String className = n.getAttributeValue("variable-class");
-            if (className == null)
+            if (className == null) {
                 className = "java.lang.String";
+            }
 
             String declareStr = n.getAttributeValue("declare");
             boolean declare = true;
-            if (declareStr != null)
+            if (declareStr != null) {
                 declare = JspUtil.booleanValue(declareStr);
+            }
 
             int scope = VariableInfo.NESTED;
             String scopeStr = n.getAttributeValue("scope");
@@ -347,7 +351,7 @@ class TagFileProcessor {
                     nameFromAttribute, className, declare, scope));
         }
 
-        public TagInfo getTagInfo() throws JasperException {
+        public TagInfo getTagInfo(String packageName) throws JasperException {
 
             if (name == null) {
                 // XXX Get it from tag file name
@@ -358,7 +362,7 @@ class TagFileProcessor {
             }
 
             String tagClassName = JspUtil.getTagHandlerClassName(
-                    path, tagLibInfo.getReliableURN(), err);
+                    path, packageName, tagLibInfo.getReliableURN(), err);
 
             TagVariableInfo[] tagVariableInfos = new TagVariableInfo[variableVector
                     .size()];
@@ -505,7 +509,7 @@ class TagFileProcessor {
         page.visit(tagFileVisitor);
         tagFileVisitor.postCheck();
 
-        return tagFileVisitor.getTagInfo();
+        return tagFileVisitor.getTagInfo(pc.getJspCompilationContext().getOptions().getGeneratedTagFilePackageName());
     }
 
     /**

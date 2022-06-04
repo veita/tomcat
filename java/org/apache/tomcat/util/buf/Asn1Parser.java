@@ -41,6 +41,16 @@ public class Asn1Parser {
     }
 
 
+    public boolean eof() {
+        return pos == source.length;
+    }
+
+
+    public int peekTag() {
+        return source[pos] & 0xFF;
+    }
+
+
     public void parseTag(int tag) {
         int value = next();
         if (value != tag) {
@@ -80,6 +90,12 @@ public class Asn1Parser {
         System.arraycopy(source, pos, val, 0, len);
         pos += len;
         return new BigInteger(val);
+    }
+
+
+    public void parseBytes(byte[] dest) {
+        System.arraycopy(source, pos, dest, 0, dest.length);
+        pos += dest.length;
     }
 
 

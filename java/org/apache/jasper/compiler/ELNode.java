@@ -14,14 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.jasper.compiler;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import javax.servlet.jsp.tagext.FunctionInfo;
+import jakarta.servlet.jsp.tagext.FunctionInfo;
 
 import org.apache.jasper.JasperException;
 

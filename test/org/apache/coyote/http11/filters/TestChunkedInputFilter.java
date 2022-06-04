@@ -14,17 +14,16 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-
 package org.apache.coyote.http11.filters;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -101,7 +100,7 @@ public class TestChunkedInputFilter extends TomcatBaseTest {
         Context ctx = tomcat.addContext("", null);
 
         // Configure allowed trailer headers
-        tomcat.getConnector().setProperty("allowedTrailerHeaders", "x-trailer1,x-trailer2");
+        Assert.assertTrue(tomcat.getConnector().setProperty("allowedTrailerHeaders", "x-trailer1,x-trailer2"));
 
         EchoHeaderServlet servlet = new EchoHeaderServlet(expectPass);
         Tomcat.addServlet(ctx, "servlet", servlet);
@@ -170,7 +169,7 @@ public class TestChunkedInputFilter extends TomcatBaseTest {
         ctx.addServletMappingDecoded("/", "servlet");
 
         // Limit the size of the trailing header
-        tomcat.getConnector().setProperty("maxTrailerSize", "10");
+        Assert.assertTrue(tomcat.getConnector().setProperty("maxTrailerSize", "10"));
         tomcat.start();
 
         String[] request = new String[]{
@@ -223,8 +222,8 @@ public class TestChunkedInputFilter extends TomcatBaseTest {
         // Setup Tomcat instance
         Tomcat tomcat = getTomcatInstance();
 
-        tomcat.getConnector().setProperty(
-                "maxExtensionSize", Integer.toString(EXT_SIZE_LIMIT));
+        Assert.assertTrue(tomcat.getConnector().setProperty(
+                "maxExtensionSize", Integer.toString(EXT_SIZE_LIMIT)));
 
         // No file system docBase required
         Context ctx = tomcat.addContext("", null);

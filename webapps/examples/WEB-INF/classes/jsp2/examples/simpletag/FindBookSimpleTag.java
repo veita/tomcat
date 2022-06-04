@@ -14,12 +14,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
-
 package jsp2.examples.simpletag;
 
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.tagext.SimpleTagSupport;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.tagext.SimpleTagSupport;
 
 import jsp2.examples.BookBean;
 

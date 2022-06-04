@@ -14,8 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-
 package org.apache.catalina.manager.host;
 
 import java.io.IOException;
@@ -23,12 +21,13 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.URLEncoder;
 import java.text.MessageFormat;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.Arrays;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.apache.catalina.Container;
 import org.apache.catalina.Host;
@@ -266,13 +265,16 @@ public final class HTMLHostManagerServlet extends HostManagerServlet {
 
         PrintWriter writer = response.getWriter();
 
-        // HTML Header Section
-        writer.print(org.apache.catalina.manager.Constants.HTML_HEADER_SECTION);
-
-        // Body Header Section
         Object[] args = new Object[2];
         args[0] = request.getContextPath();
         args[1] = smClient.getString("htmlHostManagerServlet.title");
+
+        // HTML Header Section
+        writer.print(MessageFormat.format(
+            org.apache.catalina.manager.Constants.HTML_HEADER_SECTION, args
+        ));
+
+        // Body Header Section
         writer.print(MessageFormat.format(
                 org.apache.catalina.manager.Constants.BODY_HEADER_SECTION, args));
 
@@ -311,30 +313,22 @@ public final class HTMLHostManagerServlet extends HostManagerServlet {
         writer.print(MessageFormat.format(HOSTS_HEADER_SECTION, args));
 
         // Hosts Row Section
-        // Create sorted map of host names.
+        // Create sorted set of host names.
         Container[] children = engine.findChildren();
         String hostNames[] = new String[children.length];
-        for (int i = 0; i < children.length; i++)
+        for (int i = 0; i < children.length; i++) {
             hostNames[i] = children[i].getName();
-
-        TreeMap<String,String> sortedHostNamesMap = new TreeMap<>();
-
-        for (int i = 0; i < hostNames.length; i++) {
-            String displayPath = hostNames[i];
-            sortedHostNamesMap.put(displayPath, hostNames[i]);
         }
 
-        String hostsStart =
-            smClient.getString("htmlHostManagerServlet.hostsStart");
-        String hostsStop =
-            smClient.getString("htmlHostManagerServlet.hostsStop");
-        String hostsRemove =
-            smClient.getString("htmlHostManagerServlet.hostsRemove");
-        String hostThis =
-            smClient.getString("htmlHostManagerServlet.hostThis");
+        SortedSet<String> sortedHostNames = new TreeSet<>();
+        sortedHostNames.addAll(Arrays.asList(hostNames));
 
-        for (Map.Entry<String, String> entry : sortedHostNamesMap.entrySet()) {
-            String hostName = entry.getKey();
+        String hostsStart = smClient.getString("htmlHostManagerServlet.hostsStart");
+        String hostsStop = smClient.getString("htmlHostManagerServlet.hostsStop");
+        String hostsRemove = smClient.getString("htmlHostManagerServlet.hostsRemove");
+        String hostThis = smClient.getString("htmlHostManagerServlet.hostThis");
+
+        for (String hostName : sortedHostNames) {
             Host host = (Host) engine.findChild(hostName);
 
             if (host != null ) {

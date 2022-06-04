@@ -135,9 +135,8 @@ public class TestRegistration extends TomcatBaseTest {
                 + ObjectName.quote(ADDRESS),
         "Tomcat:type=ThreadPool,name="
                 + ObjectName.quote("http-" + type + "-" + ADDRESS + "-" + port),
-        "Tomcat:type=ThreadPool,name="
-                + ObjectName.quote("http-" + type + "-" + ADDRESS + "-" + port) +
-                ",subType=SocketProperties",
+        "Tomcat:type=SocketProperties,name="
+                + ObjectName.quote("http-" + type + "-" + ADDRESS + "-" + port),
         };
     }
 
@@ -190,8 +189,6 @@ public class TestRegistration extends TomcatBaseTest {
         String protocol = tomcat.getConnector().getProtocolHandlerClassName();
         if (protocol.indexOf("Nio2") > 0) {
             protocol = "nio2";
-        } else if (protocol.indexOf("Apr") > 0) {
-            protocol = "apr";
         } else {
             protocol = "nio";
         }

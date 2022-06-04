@@ -24,17 +24,17 @@ import java.io.OutputStreamWriter;
 import java.lang.reflect.Method;
 import java.util.Enumeration;
 
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.JspWriter;
-import javax.servlet.jsp.PageContext;
-import javax.servlet.jsp.tagext.BodyContent;
-import javax.servlet.jsp.tagext.BodyTag;
-import javax.servlet.jsp.tagext.Tag;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.JspWriter;
+import jakarta.servlet.jsp.PageContext;
+import jakarta.servlet.jsp.tagext.BodyContent;
+import jakarta.servlet.jsp.tagext.BodyTag;
+import jakarta.servlet.jsp.tagext.Tag;
 
 import org.apache.jasper.JasperException;
 import org.apache.jasper.compiler.Localizer;
@@ -69,13 +69,13 @@ public class JspRuntimeLibrary {
         } catch (ReflectiveOperationException | IllegalArgumentException e) {
             // Should never happen
         }
-        GRAAL = result;
+        GRAAL = result || System.getProperty("org.graalvm.nativeimage.imagecode") != null;
     }
 
     /**
-     * Returns the value of the javax.servlet.error.exception request
+     * Returns the value of the jakarta.servlet.error.exception request
      * attribute value, if present, otherwise the value of the
-     * javax.servlet.jsp.jspException request attribute value.
+     * jakarta.servlet.jsp.jspException request attribute value.
      *
      * This method is called at the beginning of the generated servlet code
      * for a JSP error page, when the "exception" implicit scripting language
@@ -104,17 +104,19 @@ public class JspRuntimeLibrary {
     }
 
     public static boolean coerceToBoolean(String s) {
-        if (s == null || s.length() == 0)
+        if (s == null || s.length() == 0) {
             return false;
-        else
+        } else {
             return Boolean.parseBoolean(s);
+        }
     }
 
     public static byte coerceToByte(String s) {
-        if (s == null || s.length() == 0)
+        if (s == null || s.length() == 0) {
             return (byte) 0;
-        else
+        } else {
             return Byte.parseByte(s);
+        }
     }
 
     public static char coerceToChar(String s) {
@@ -126,38 +128,43 @@ public class JspRuntimeLibrary {
     }
 
     public static double coerceToDouble(String s) {
-        if (s == null || s.length() == 0)
+        if (s == null || s.length() == 0) {
             return 0;
-        else
+        } else {
             return Double.parseDouble(s);
+        }
     }
 
     public static float coerceToFloat(String s) {
-        if (s == null || s.length() == 0)
+        if (s == null || s.length() == 0) {
             return 0;
-        else
+        } else {
             return Float.parseFloat(s);
+        }
     }
 
     public static int coerceToInt(String s) {
-        if (s == null || s.length() == 0)
+        if (s == null || s.length() == 0) {
             return 0;
-        else
+        } else {
             return Integer.parseInt(s);
+        }
     }
 
     public static short coerceToShort(String s) {
-        if (s == null || s.length() == 0)
+        if (s == null || s.length() == 0) {
             return (short) 0;
-        else
+        } else {
             return Short.parseShort(s);
+        }
     }
 
     public static long coerceToLong(String s) {
-        if (s == null || s.length() == 0)
+        if (s == null || s.length() == 0) {
             return 0;
-        else
+        } else {
             return Long.parseLong(s);
+        }
     }
 
     public static Object coerce(String s, Class<?> target) {
@@ -170,43 +177,49 @@ public class JspRuntimeLibrary {
             }
             return Boolean.valueOf(s);
         } else if (target == Byte.class) {
-            if (isNullOrEmpty)
+            if (isNullOrEmpty) {
                 return Byte.valueOf((byte) 0);
-            else
+            } else {
                 return Byte.valueOf(s);
+            }
         } else if (target == Character.class) {
-            if (isNullOrEmpty)
+            if (isNullOrEmpty) {
                 return Character.valueOf((char) 0);
-            else {
+            } else {
                 @SuppressWarnings("null")
                 Character result = Character.valueOf(s.charAt(0));
                 return result;
             }
         } else if (target == Double.class) {
-            if (isNullOrEmpty)
+            if (isNullOrEmpty) {
                 return Double.valueOf(0);
-            else
+            } else {
                 return Double.valueOf(s);
+            }
         } else if (target == Float.class) {
-            if (isNullOrEmpty)
+            if (isNullOrEmpty) {
                 return Float.valueOf(0);
-            else
+            } else {
                 return Float.valueOf(s);
+            }
         } else if (target == Integer.class) {
-            if (isNullOrEmpty)
+            if (isNullOrEmpty) {
                 return Integer.valueOf(0);
-            else
+            } else {
                 return Integer.valueOf(s);
+            }
         } else if (target == Short.class) {
-            if (isNullOrEmpty)
+            if (isNullOrEmpty) {
                 return Short.valueOf((short) 0);
-            else
+            } else {
                 return Short.valueOf(s);
+            }
         } else if (target == Long.class) {
-            if (isNullOrEmpty)
+            if (isNullOrEmpty) {
                 return Long.valueOf(0);
-            else
+            } else {
                 return Long.valueOf(s);
+            }
         } else {
             return null;
         }
@@ -219,10 +232,11 @@ public class JspRuntimeLibrary {
     {
         try {
             if (s == null) {
-                if (t.equals(Boolean.class) || t.equals(Boolean.TYPE))
+                if (t.equals(Boolean.class) || t.equals(Boolean.TYPE)) {
                     s = "false";
-                else
+                } else {
                     return null;
+                }
             }
             if (propertyEditorClass != null) {
                 return getValueFromBeanInfoPropertyEditor(
@@ -318,11 +332,11 @@ public class JspRuntimeLibrary {
                 if ( info != null ) {
                     java.beans.PropertyDescriptor pd[]
                             = info.getPropertyDescriptors();
-                    for (int i = 0 ; i < pd.length ; i++) {
-                        if ( pd[i].getName().equals(prop) ) {
-                            method = pd[i].getWriteMethod();
-                            type   = pd[i].getPropertyType();
-                            propertyEditorClass = pd[i].getPropertyEditorClass();
+                    for (java.beans.PropertyDescriptor propertyDescriptor : pd) {
+                        if (propertyDescriptor.getName().equals(prop)) {
+                            method = propertyDescriptor.getWriteMethod();
+                            type = propertyDescriptor.getPropertyType();
+                            propertyEditorClass = propertyDescriptor.getPropertyEditorClass();
                             break;
                         }
                     }
@@ -337,7 +351,9 @@ public class JspRuntimeLibrary {
                     Class<?> t = type.getComponentType();
                     String[] values = request.getParameterValues(param);
                     //XXX Please check.
-                    if(values == null) return;
+                    if(values == null) {
+                        return;
+                    }
                     if(t.equals(String.class)) {
                         method.invoke(bean, new Object[] { values });
                     } else {
@@ -345,10 +361,13 @@ public class JspRuntimeLibrary {
                                           propertyEditorClass);
                     }
                 } else {
-                    if(value == null || (param != null && value.equals(""))) return;
+                    if(value == null || (param != null && value.equals(""))) {
+                        return;
+                    }
                     Object oval = convert(prop, value, type, propertyEditorClass);
-                    if ( oval != null )
+                    if ( oval != null ) {
                         method.invoke(bean, new Object[] { oval });
+                    }
                 }
             }
         } catch (Exception ex) {
@@ -445,83 +464,99 @@ public class JspRuntimeLibrary {
                 method.invoke (bean, new Object[] {tmpval});
             } else if (t.equals(Integer.class)) {
                 Integer []tmpval = new Integer[values.length];
-                for (int i = 0 ; i < values.length; i++)
+                for (int i = 0 ; i < values.length; i++) {
                     tmpval[i] =  Integer.valueOf(values[i]);
+                }
                 method.invoke (bean, new Object[] {tmpval});
             } else if (t.equals(Byte.class)) {
                 Byte[] tmpval = new Byte[values.length];
-                for (int i = 0 ; i < values.length; i++)
+                for (int i = 0 ; i < values.length; i++) {
                     tmpval[i] = Byte.valueOf(values[i]);
+                }
                 method.invoke (bean, new Object[] {tmpval});
             } else if (t.equals(Boolean.class)) {
                 Boolean[] tmpval = new Boolean[values.length];
-                for (int i = 0 ; i < values.length; i++)
+                for (int i = 0 ; i < values.length; i++) {
                     tmpval[i] = Boolean.valueOf(values[i]);
+                }
                 method.invoke (bean, new Object[] {tmpval});
             } else if (t.equals(Short.class)) {
                 Short[] tmpval = new Short[values.length];
-                for (int i = 0 ; i < values.length; i++)
+                for (int i = 0 ; i < values.length; i++) {
                     tmpval[i] = Short.valueOf(values[i]);
+                }
                 method.invoke (bean, new Object[] {tmpval});
             } else if (t.equals(Long.class)) {
                 Long[] tmpval = new Long[values.length];
-                for (int i = 0 ; i < values.length; i++)
+                for (int i = 0 ; i < values.length; i++) {
                     tmpval[i] = Long.valueOf(values[i]);
+                }
                 method.invoke (bean, new Object[] {tmpval});
             } else if (t.equals(Double.class)) {
                 Double[] tmpval = new Double[values.length];
-                for (int i = 0 ; i < values.length; i++)
+                for (int i = 0 ; i < values.length; i++) {
                     tmpval[i] = Double.valueOf(values[i]);
+                }
                 method.invoke (bean, new Object[] {tmpval});
             } else if (t.equals(Float.class)) {
                 Float[] tmpval = new Float[values.length];
-                for (int i = 0 ; i < values.length; i++)
+                for (int i = 0 ; i < values.length; i++) {
                     tmpval[i] = Float.valueOf(values[i]);
+                }
                 method.invoke (bean, new Object[] {tmpval});
             } else if (t.equals(Character.class)) {
                 Character[] tmpval = new Character[values.length];
-                for (int i = 0 ; i < values.length; i++)
+                for (int i = 0 ; i < values.length; i++) {
                     tmpval[i] = Character.valueOf(values[i].charAt(0));
+                }
                 method.invoke (bean, new Object[] {tmpval});
             } else if (t.equals(int.class)) {
                 int []tmpval = new int[values.length];
-                for (int i = 0 ; i < values.length; i++)
+                for (int i = 0 ; i < values.length; i++) {
                     tmpval[i] = Integer.parseInt (values[i]);
+                }
                 method.invoke (bean, new Object[] {tmpval});
             } else if (t.equals(byte.class)) {
                 byte[] tmpval = new byte[values.length];
-                for (int i = 0 ; i < values.length; i++)
+                for (int i = 0 ; i < values.length; i++) {
                     tmpval[i] = Byte.parseByte (values[i]);
+                }
                 method.invoke (bean, new Object[] {tmpval});
             } else if (t.equals(boolean.class)) {
                 boolean[] tmpval = new boolean[values.length];
-                for (int i = 0 ; i < values.length; i++)
+                for (int i = 0 ; i < values.length; i++) {
                     tmpval[i] = Boolean.parseBoolean(values[i]);
+                }
                 method.invoke (bean, new Object[] {tmpval});
             } else if (t.equals(short.class)) {
                 short[] tmpval = new short[values.length];
-                for (int i = 0 ; i < values.length; i++)
+                for (int i = 0 ; i < values.length; i++) {
                     tmpval[i] = Short.parseShort (values[i]);
+                }
                 method.invoke (bean, new Object[] {tmpval});
             } else if (t.equals(long.class)) {
                 long[] tmpval = new long[values.length];
-                for (int i = 0 ; i < values.length; i++)
+                for (int i = 0 ; i < values.length; i++) {
                     tmpval[i] = Long.parseLong (values[i]);
+                }
                 method.invoke (bean, new Object[] {tmpval});
             } else if (t.equals(double.class)) {
                 double[] tmpval = new double[values.length];
-                for (int i = 0 ; i < values.length; i++)
+                for (int i = 0 ; i < values.length; i++) {
                     tmpval[i] = Double.parseDouble(values[i]);
+                }
                 method.invoke (bean, new Object[] {tmpval});
             } else if (t.equals(float.class)) {
                 float[] tmpval = new float[values.length];
-                for (int i = 0 ; i < values.length; i++)
+                for (int i = 0 ; i < values.length; i++) {
                     tmpval[i] = Float.parseFloat(values[i]);
+                }
                 method.invoke (bean, new Object[] {tmpval});
             } else if (t.equals(char.class)) {
                 char[] tmpval = new char[values.length];
-                for (int i = 0 ; i < values.length; i++)
+                for (int i = 0 ; i < values.length; i++) {
                     tmpval[i] = values[i].charAt(0);
+                }
                 method.invoke (bean, new Object[] {tmpval});
             } else {
                 Object[] tmpval = new Integer[values.length];
@@ -762,10 +797,10 @@ public class JspRuntimeLibrary {
             try {
                 java.beans.BeanInfo info = java.beans.Introspector.getBeanInfo(beanClass);
                 java.beans.PropertyDescriptor pd[] = info.getPropertyDescriptors();
-                for (int i = 0 ; i < pd.length ; i++) {
-                    if ( pd[i].getName().equals(prop) ) {
-                        result = pd[i].getWriteMethod();
-                        type = pd[i].getPropertyType();
+                for (java.beans.PropertyDescriptor propertyDescriptor : pd) {
+                    if (propertyDescriptor.getName().equals(prop)) {
+                        result = propertyDescriptor.getWriteMethod();
+                        type = propertyDescriptor.getPropertyType();
                         break;
                     }
                 }
@@ -802,10 +837,10 @@ public class JspRuntimeLibrary {
             try {
                 java.beans.BeanInfo info = java.beans.Introspector.getBeanInfo(beanClass);
                 java.beans.PropertyDescriptor pd[] = info.getPropertyDescriptors();
-                for (int i = 0 ; i < pd.length ; i++) {
-                    if (pd[i].getName().equals(prop)) {
-                        result = pd[i].getReadMethod();
-                        type = pd[i].getPropertyType();
+                for (java.beans.PropertyDescriptor propertyDescriptor : pd) {
+                    if (propertyDescriptor.getName().equals(prop)) {
+                        result = propertyDescriptor.getReadMethod();
+                        type = propertyDescriptor.getPropertyType();
                         break;
                     }
                 }
@@ -894,10 +929,12 @@ public class JspRuntimeLibrary {
     public static String getContextRelativePath(ServletRequest request,
                                                 String relativePath) {
 
-        if (relativePath.startsWith("/"))
+        if (relativePath.startsWith("/")) {
             return relativePath;
-        if (!(request instanceof HttpServletRequest))
+        }
+        if (!(request instanceof HttpServletRequest)) {
             return relativePath;
+        }
         HttpServletRequest hrequest = (HttpServletRequest) request;
         String uri = (String) request.getAttribute(
                 RequestDispatcher.INCLUDE_SERVLET_PATH);
@@ -905,14 +942,15 @@ public class JspRuntimeLibrary {
             String pathInfo = (String)
                 request.getAttribute(RequestDispatcher.INCLUDE_PATH_INFO);
             if (pathInfo == null) {
-                if (uri.lastIndexOf('/') >= 0)
+                if (uri.lastIndexOf('/') >= 0) {
                     uri = uri.substring(0, uri.lastIndexOf('/'));
+                }
             }
-        }
-        else {
+        } else {
             uri = hrequest.getServletPath();
-            if (uri.lastIndexOf('/') >= 0)
+            if (uri.lastIndexOf('/') >= 0) {
                 uri = uri.substring(0, uri.lastIndexOf('/'));
+            }
         }
         return uri + '/' + relativePath;
 
@@ -939,8 +977,9 @@ public class JspRuntimeLibrary {
                                boolean flush)
         throws IOException, ServletException {
 
-        if (flush && !(out instanceof BodyContent))
+        if (flush && !(out instanceof BodyContent)) {
             out.flush();
+        }
 
         // FIXME - It is tempting to use request.getRequestDispatcher() to
         // resolve a relative path directly, but Catalina currently does not
@@ -1002,11 +1041,11 @@ public class JspRuntimeLibrary {
                     continue;
                 }
                 byte[] ba = buf.toByteArray();
-                for (int j = 0; j < ba.length; j++) {
+                for (byte b : ba) {
                     out.append('%');
                     // Converting each byte in the buffer
-                    out.append(Character.forDigit((ba[j]>>4) & 0xf, 16));
-                    out.append(Character.forDigit(ba[j] & 0xf, 16));
+                    out.append(Character.forDigit((b >> 4) & 0xf, 16));
+                    out.append(Character.forDigit(b & 0xf, 16));
                 }
                 buf.reset();
             }

@@ -20,18 +20,16 @@ import java.lang.reflect.Modifier;
 import java.util.HashSet;
 import java.util.Set;
 
-import javax.servlet.ServletContainerInitializer;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.annotation.HandlesTypes;
-import javax.websocket.ContainerProvider;
-import javax.websocket.DeploymentException;
-import javax.websocket.Endpoint;
-import javax.websocket.server.ServerApplicationConfig;
-import javax.websocket.server.ServerEndpoint;
-import javax.websocket.server.ServerEndpointConfig;
-
-import org.apache.tomcat.util.compat.JreCompat;
+import jakarta.servlet.ServletContainerInitializer;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.HandlesTypes;
+import jakarta.websocket.ContainerProvider;
+import jakarta.websocket.DeploymentException;
+import jakarta.websocket.Endpoint;
+import jakarta.websocket.server.ServerApplicationConfig;
+import jakarta.websocket.server.ServerEndpoint;
+import jakarta.websocket.server.ServerEndpointConfig;
 
 /**
  * Registers an interest in any class that is annotated with
@@ -58,18 +56,17 @@ public class WsSci implements ServletContainerInitializer {
         Set<Class<?>> scannedPojoEndpoints = new HashSet<>();
 
         try {
-            // wsPackage is "javax.websocket."
+            // wsPackage is "jakarta.websocket."
             String wsPackage = ContainerProvider.class.getName();
             wsPackage = wsPackage.substring(0, wsPackage.lastIndexOf('.') + 1);
             for (Class<?> clazz : clazzes) {
-                JreCompat jreCompat = JreCompat.getInstance();
                 int modifiers = clazz.getModifiers();
                 if (!Modifier.isPublic(modifiers) ||
                         Modifier.isAbstract(modifiers) ||
                         Modifier.isInterface(modifiers) ||
-                        !jreCompat.isExported(clazz)) {
+                        !isExported(clazz)) {
                     // Non-public, abstract, interface or not in an exported
-                    // package (Java 9+) - skip it.
+                    // package - skip it.
                     continue;
                 }
                 // Protect against scanning the WebSocket API JARs
@@ -128,6 +125,13 @@ public class WsSci implements ServletContainerInitializer {
         } catch (DeploymentException e) {
             throw new ServletException(e);
         }
+    }
+
+
+    private static boolean isExported(Class<?> type) {
+        String packageName = type.getPackage().getName();
+        Module module = type.getModule();
+        return module.isExported(packageName);
     }
 
 

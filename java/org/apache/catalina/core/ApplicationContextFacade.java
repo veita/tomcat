@@ -14,8 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-
 package org.apache.catalina.core;
 
 
@@ -34,17 +32,17 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.servlet.Filter;
-import javax.servlet.FilterRegistration;
-import javax.servlet.RequestDispatcher;
-import javax.servlet.Servlet;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRegistration;
-import javax.servlet.ServletRegistration.Dynamic;
-import javax.servlet.SessionCookieConfig;
-import javax.servlet.SessionTrackingMode;
-import javax.servlet.descriptor.JspConfigDescriptor;
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterRegistration;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.Servlet;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRegistration;
+import jakarta.servlet.ServletRegistration.Dynamic;
+import jakarta.servlet.SessionCookieConfig;
+import jakarta.servlet.SessionTrackingMode;
+import jakarta.servlet.descriptor.JspConfigDescriptor;
 
 import org.apache.catalina.Globals;
 import org.apache.catalina.security.SecurityUtil;
@@ -117,6 +115,11 @@ public class ApplicationContextFacade implements ServletContext {
         classCache.put("getAttribute", clazz);
         classCache.put("log", clazz);
         classCache.put("setSessionTrackingModes", new Class[]{Set.class} );
+        classCache.put("addJspFile", new Class[]{String.class, String.class});
+        classCache.put("declareRoles", new Class[]{String[].class});
+        classCache.put("setSessionTimeout", new Class[]{int.class});
+        classCache.put("setRequestCharacterEncoding", new Class[]{String.class});
+        classCache.put("setResponseCharacterEncoding", new Class[]{String.class});
     }
 
 
@@ -235,82 +238,12 @@ public class ApplicationContextFacade implements ServletContext {
     }
 
 
-    /**
-     * @deprecated As of Java Servlet API 2.1, with no direct replacement.
-     */
-    @Override
-    @Deprecated
-    public Servlet getServlet(String name)
-        throws ServletException {
-        if (SecurityUtil.isPackageProtectionEnabled()) {
-            try {
-                return (Servlet) invokeMethod(context, "getServlet",
-                                              new Object[]{name});
-            } catch (Throwable t) {
-                ExceptionUtils.handleThrowable(t);
-                if (t instanceof ServletException) {
-                    throw (ServletException) t;
-                }
-                return null;
-            }
-        } else {
-            return context.getServlet(name);
-        }
-    }
-
-
-    /**
-     * @deprecated As of Java Servlet API 2.1, with no direct replacement.
-     */
-    @Override
-    @SuppressWarnings("unchecked") // doPrivileged() returns the correct type
-    @Deprecated
-    public Enumeration<Servlet> getServlets() {
-        if (SecurityUtil.isPackageProtectionEnabled()) {
-            return (Enumeration<Servlet>) doPrivileged("getServlets", null);
-        } else {
-            return context.getServlets();
-        }
-    }
-
-
-    /**
-     * @deprecated As of Java Servlet API 2.1, with no direct replacement.
-     */
-    @Override
-    @SuppressWarnings("unchecked") // doPrivileged() returns the correct type
-    @Deprecated
-    public Enumeration<String> getServletNames() {
-        if (SecurityUtil.isPackageProtectionEnabled()) {
-            return (Enumeration<String>) doPrivileged("getServletNames", null);
-        } else {
-            return context.getServletNames();
-        }
-   }
-
-
     @Override
     public void log(String msg) {
         if (SecurityUtil.isPackageProtectionEnabled()) {
             doPrivileged("log", new Object[]{msg} );
         } else {
             context.log(msg);
-        }
-    }
-
-
-    /**
-     * @deprecated As of Java Servlet API 2.1, use
-     *  <code>log(String, Throwable)</code> instead
-     */
-    @Override
-    @Deprecated
-    public void log(Exception exception, String msg) {
-        if (SecurityUtil.isPackageProtectionEnabled()) {
-            doPrivileged("log", new Class[]{Exception.class, String.class},
-                         new Object[]{exception,msg});
-        } else {
-            context.log(exception, msg);
         }
     }
 

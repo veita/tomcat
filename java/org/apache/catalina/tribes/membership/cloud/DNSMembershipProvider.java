@@ -14,14 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.catalina.tribes.membership.cloud;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.URLEncoder;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.catalina.tribes.Member;
@@ -30,10 +31,65 @@ import org.apache.catalina.tribes.membership.MemberImpl;
 import org.apache.juli.logging.Log;
 import org.apache.juli.logging.LogFactory;
 
+/**
+ * A {@link org.apache.catalina.tribes.MembershipProvider} that uses DNS to retrieve the members of a cluster.<br>
+ *
+ * <p>
+ * <strong>Configuration example for Kubernetes</strong>
+ * </p>
+ *
+ * {@code server.xml }
+ *
+ * <pre>
+ * {@code
+ * <Server ...
+ *
+ *   <Service ...
+ *
+ *     <Engine ...
+ *
+ *       <Host ...
+ *
+ *         <Cluster className="org.apache.catalina.ha.tcp.SimpleTcpCluster">
+ *           <Channel className="org.apache.catalina.tribes.group.GroupChannel">
+ *             <Membership className="org.apache.catalina.tribes.membership.cloud.CloudMembershipService"
+ *                 membershipProviderClassName="org.apache.catalina.tribes.membership.cloud.DNSMembershipProvider"/>
+ *           </Channel>
+ *         </Cluster>
+ *         ...
+ *  }
+ *  </pre>
+ *
+ * {@code dns-membership-service.yml }
+ *
+ * <pre>
+ * {@code
+ * apiVersion: v1
+ * kind: Service
+ * metadata:
+ *   annotations:
+ *     service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+ *     description: "The service for tomcat cluster membership."
+ *   name: my-tomcat-app-membership
+ * spec:
+ *   clusterIP: None
+ *   ports:
+ *   - name: membership
+ *     port: 8888
+ *   selector:
+ *     app: my-tomcat-app
+ * }
+ * </pre>
+ *
+ * Environment variable configuration<br>
+ *
+ * {@code DNS_MEMBERSHIP_SERVICE_NAME=my-tomcat-app-membership }
+ */
+
 public class DNSMembershipProvider extends CloudMembershipProvider {
     private static final Log log = LogFactory.getLog(DNSMembershipProvider.class);
 
-    private String namespace;
+    private String dnsServiceName;
 
     @Override
     public void start(int level) throws Exception {
@@ -44,12 +100,15 @@ public class DNSMembershipProvider extends CloudMembershipProvider {
         super.start(level);
 
         // Set up Kubernetes API parameters
-        namespace = getNamespace();
+        dnsServiceName = getEnv("DNS_MEMBERSHIP_SERVICE_NAME");
+        if (dnsServiceName == null) {
+            dnsServiceName = getNamespace();
+        }
 
         if (log.isDebugEnabled()) {
-            log.debug(String.format("Namespace [%s] set; clustering enabled", namespace));
+            log.debug(String.format("Namespace [%s] set; clustering enabled", dnsServiceName));
         }
-        namespace = URLEncoder.encode(namespace, "UTF-8");
+        dnsServiceName = URLEncoder.encode(dnsServiceName, "UTF-8");
 
         // Fetch initial members
         heartbeat();
@@ -66,9 +125,9 @@ public class DNSMembershipProvider extends CloudMembershipProvider {
 
         InetAddress[] inetAddresses = null;
         try {
-            inetAddresses = InetAddress.getAllByName(namespace);
+            inetAddresses = InetAddress.getAllByName(dnsServiceName);
         } catch (UnknownHostException exception) {
-            log.warn(sm.getString("dnsMembershipProvider.dnsError", namespace), exception);
+            log.warn(sm.getString("dnsMembershipProvider.dnsError", dnsServiceName), exception);
         }
 
         if (inetAddresses != null) {
@@ -98,5 +157,39 @@ public class DNSMembershipProvider extends CloudMembershipProvider {
         }
 
         return members.toArray(new Member[0]);
+    }
+
+    @Override
+    public boolean accept(Serializable msg, Member sender) {
+        // Check if the sender is in the member list.
+        boolean found = false;
+        Member[] members = membership.getMembers();
+        if (members != null) {
+            for (Member member : members) {
+                if (Arrays.equals(sender.getHost(), member.getHost())
+                        && sender.getPort() == member.getPort()) {
+                    found = true;
+                    break;
+                }
+            }
+        }
+        if (!found) {
+            MemberImpl member = new MemberImpl();
+            member.setHost(sender.getHost());
+            member.setPort(sender.getPort());
+            byte[] host = sender.getHost();
+            int i = 0;
+            StringBuilder buf = new StringBuilder();
+            buf.append(host[i++] & 0xff);
+            for (; i < host.length; i++) {
+                buf.append(".").append(host[i] & 0xff);
+            }
+
+            byte[] id = md5.digest(buf.toString().getBytes());
+            member.setUniqueId(id);
+            member.setMemberAliveTime(-1);
+            updateMember(member, true);
+        }
+        return false;
     }
 }

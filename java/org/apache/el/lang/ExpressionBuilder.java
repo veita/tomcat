@@ -21,12 +21,12 @@ import java.lang.reflect.Method;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 
-import javax.el.ELContext;
-import javax.el.ELException;
-import javax.el.FunctionMapper;
-import javax.el.MethodExpression;
-import javax.el.ValueExpression;
-import javax.el.VariableMapper;
+import jakarta.el.ELContext;
+import jakarta.el.ELException;
+import jakarta.el.FunctionMapper;
+import jakarta.el.MethodExpression;
+import jakarta.el.ValueExpression;
+import jakarta.el.VariableMapper;
 
 import org.apache.el.MethodExpressionImpl;
 import org.apache.el.MethodExpressionLiteral;
@@ -60,13 +60,7 @@ public final class ExpressionBuilder implements NodeVisitor {
             cacheSizeStr = System.getProperty(CACHE_SIZE_PROP, "5000");
         } else {
             cacheSizeStr = AccessController.doPrivileged(
-                    new PrivilegedAction<String>() {
-
-                    @Override
-                    public String run() {
-                        return System.getProperty(CACHE_SIZE_PROP, "5000");
-                    }
-                });
+                    (PrivilegedAction<String>) () -> System.getProperty(CACHE_SIZE_PROP, "5000"));
         }
         CACHE_SIZE = Integer.parseInt(cacheSizeStr);
     }
@@ -126,11 +120,12 @@ public final class ExpressionBuilder implements NodeVisitor {
                     Node child = null;
                     for (int i = 0; i < numChildren; i++) {
                         child = n.jjtGetChild(i);
-                        if (child instanceof AstLiteralExpression)
+                        if (child instanceof AstLiteralExpression) {
                             continue;
-                        if (type == null)
+                        }
+                        if (type == null) {
                             type = child.getClass();
-                        else {
+                        } else {
                             if (!type.equals(child.getClass())) {
                                 throw new ELException(MessageFactory.get(
                                         "error.mixed", expr));

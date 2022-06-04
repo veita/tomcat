@@ -45,8 +45,8 @@ import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import javax.servlet.jsp.JspFactory;
-import javax.servlet.jsp.tagext.TagLibraryInfo;
+import jakarta.servlet.jsp.JspFactory;
+import jakarta.servlet.jsp.tagext.TagLibraryInfo;
 
 import org.apache.jasper.compiler.Compiler;
 import org.apache.jasper.compiler.JspConfig;
@@ -104,6 +104,7 @@ public class JspC extends Task implements Options {
         JspFactory.setDefaultFactory(new JspFactoryImpl());
     }
 
+    @Deprecated
     public static final String DEFAULT_IE_CLASS_ID =
             "clsid:8AD9C840-044E-11D1-B3E9-00805F499D93";
 
@@ -185,7 +186,7 @@ public class JspC extends Task implements Options {
     protected boolean mappedFile = false;
     protected boolean poolingEnabled = true;
     protected File scratchDir;
-    protected String ieClassId = DEFAULT_IE_CLASS_ID;
+
     protected String targetPackage;
     protected String targetClassName;
     protected String uriBase;
@@ -201,8 +202,8 @@ public class JspC extends Task implements Options {
 
     protected String compiler = null;
 
-    protected String compilerTargetVM = "1.8";
-    protected String compilerSourceVM = "1.8";
+    protected String compilerTargetVM = "11";
+    protected String compilerSourceVM = "11";
 
     protected boolean classDebugInfo = true;
 
@@ -702,25 +703,6 @@ public class JspC extends Task implements Options {
     }
 
     /**
-     * Sets the class-id value to be sent to Internet Explorer when using
-     * &lt;jsp:plugin&gt; tags.
-     *
-     * @param ieClassId
-     *            Class-id value
-     */
-    public void setIeClassId(String ieClassId) {
-        this.ieClassId = ieClassId;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public String getIeClassId() {
-        return ieClassId;
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override
@@ -836,8 +818,9 @@ public class JspC extends Task implements Options {
      */
     @Override
     public String getClassPath() {
-        if( classPath != null )
+        if( classPath != null ) {
             return classPath;
+        }
         return System.getProperty("java.class.path");
     }
 
@@ -1036,18 +1019,6 @@ public class JspC extends Task implements Options {
     }
 
     /**
-     * File where we generate a web.xml fragment with the class definitions.
-     * @param s New value
-     * @deprecated Will be removed in Tomcat 10.
-     *             Use {@link #setWebXmlInclude(String)}
-     */
-    @Deprecated
-    public void setWebXmlFragment( String s ) {
-        webxmlFile=resolveFile(s).getAbsolutePath();
-        webxmlLevel=INC_WEBXML;
-    }
-
-    /**
      * File where we generate configuration with the class definitions to be
      * included in a web.xml file.
      * @param s New value
@@ -1136,6 +1107,19 @@ public class JspC extends Task implements Options {
         return tagPluginManager;
     }
 
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Hard-coded to {@code false} for pre-compiled code to enable repeatable
+     * builds.
+     */
+    @Override
+    public boolean getGeneratedJavaAddTimestamp() {
+        return false;
+    }
+
+
     /**
      * Adds servlet declaration and mapping for the JSP page servlet to the
      * generated web.xml fragment.
@@ -1159,7 +1143,7 @@ public class JspC extends Task implements Options {
         String packageName = clctxt.getServletPackageName();
 
         String thisServletName;
-        if  ("".equals(packageName)) {
+        if  (packageName.isEmpty()) {
             thisServletName = className;
         } else {
             thisServletName = packageName + '.' + className;
@@ -1267,12 +1251,14 @@ public class JspC extends Task implements Options {
             }
         }
 
-        if(!webXml2.delete() && log.isDebugEnabled())
+        if(!webXml2.delete() && log.isDebugEnabled()) {
             log.debug(Localizer.getMessage("jspc.delete.fail",
                     webXml2.toString()));
+        }
 
-        if (!(new File(webxmlFile)).delete() && log.isDebugEnabled())
+        if (!(new File(webxmlFile)).delete() && log.isDebugEnabled()) {
             log.debug(Localizer.getMessage("jspc.delete.fail", webxmlFile));
+        }
 
     }
 
@@ -1391,18 +1377,6 @@ public class JspC extends Task implements Options {
                 Thread.currentThread().setContextClassLoader(originalClassLoader);
             }
         }
-    }
-
-    /**
-     * Locate all jsp files in the webapp. Used if no explicit
-     * jsps are specified.
-     * @param base Base path
-     *
-     * @deprecated This will be removed in Tomcat 10. Use {@link #scanFiles()}
-     */
-    @Deprecated
-    public void scanFiles(File base) {
-        scanFiles();
     }
 
 
@@ -1597,7 +1571,9 @@ public class JspC extends Task implements Options {
     }
 
     protected String nextFile() {
-        if (fullstop) argPos++;
+        if (fullstop) {
+            argPos++;
+        }
         if (argPos >= args.length) {
             return null;
         } else {
@@ -1746,23 +1722,24 @@ public class JspC extends Task implements Options {
                 // therefore we have permission to freak out
                 throw new RuntimeException(ioe.toString());
             }
-            File lib = new File(webappBase, "/WEB-INF/lib");
-            if (lib.exists() && lib.isDirectory()) {
-                String[] libs = lib.list();
+            File webinfLib = new File(webappBase, "/WEB-INF/lib");
+            if (webinfLib.exists() && webinfLib.isDirectory()) {
+                String[] libs = webinfLib.list();
                 if (libs != null) {
-                    for (int i = 0; i < libs.length; i++) {
-                        if( libs[i].length() <5 ) continue;
-                        String ext=libs[i].substring( libs[i].length() - 4 );
-                        if (! ".jar".equalsIgnoreCase(ext)) {
+                    for (String lib : libs) {
+                        if (lib.length() < 5) {
+                            continue;
+                        }
+                        String ext = lib.substring(lib.length() - 4);
+                        if (!".jar".equalsIgnoreCase(ext)) {
                             if (".tld".equalsIgnoreCase(ext)) {
                                 log.warn(Localizer.getMessage("jspc.warning.tldInWebInfLib"));
                             }
                             continue;
                         }
                         try {
-                            File libFile = new File(lib, libs[i]);
-                            classPath = classPath + File.pathSeparator
-                                + libFile.getAbsolutePath();
+                            File libFile = new File(webinfLib, lib);
+                            classPath = classPath + File.pathSeparator + libFile.getAbsolutePath();
                             urls.add(libFile.getAbsoluteFile().toURI().toURL());
                         } catch (IOException ioe) {
                             // failing a toCanonicalPath on a file that

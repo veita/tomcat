@@ -43,7 +43,7 @@ public final class SecurityClassLoad {
         loadServletsPackage(loader);
         loadSessionPackage(loader);
         loadUtilPackage(loader);
-        loadJavaxPackage(loader);
+        loadJakartaPackage(loader);
         loadConnectorPackage(loader);
         loadTomcatPackage(loader);
     }
@@ -120,8 +120,8 @@ public final class SecurityClassLoad {
     }
 
 
-    private static final void loadJavaxPackage(ClassLoader loader) throws Exception {
-        loader.loadClass("javax.servlet.http.Cookie");
+    private static final void loadJakartaPackage(ClassLoader loader) throws Exception {
+        loader.loadClass("jakarta.servlet.http.Cookie");
     }
 
 
@@ -149,10 +149,11 @@ public final class SecurityClassLoad {
         loader.loadClass(basePackage + "CoyoteInputStream$PrivilegedRead");
         loader.loadClass(basePackage + "CoyoteInputStream$PrivilegedReadArray");
         loader.loadClass(basePackage + "CoyoteInputStream$PrivilegedReadBuffer");
+        loader.loadClass(basePackage + "CoyoteOutputStream");
         loader.loadClass(basePackage + "InputBuffer$PrivilegedCreateConverter");
         loader.loadClass(basePackage + "Response$PrivilegedDoIsEncodable");
         loader.loadClass(basePackage + "Response$PrivilegedGenerateCookieString");
-        loader.loadClass(basePackage + "Response$PrivilgedEncodeUrl");
+        loader.loadClass(basePackage + "Response$PrivilegedEncodeUrl");
     }
 
 
@@ -186,10 +187,6 @@ public final class SecurityClassLoad {
         // net
         loader.loadClass(basePackage + "util.net.Constants");
         loader.loadClass(basePackage + "util.net.DispatchType");
-        loader.loadClass(basePackage + "util.net.NioBlockingSelector$BlockPoller$RunnableAdd");
-        loader.loadClass(basePackage + "util.net.NioBlockingSelector$BlockPoller$RunnableCancel");
-        loader.loadClass(basePackage + "util.net.NioBlockingSelector$BlockPoller$RunnableRemove");
-        loader.loadClass(basePackage + "util.net.AprEndpoint$AprSocketWrapper$AprOperationState");
         loader.loadClass(basePackage + "util.net.NioEndpoint$NioSocketWrapper$NioOperationState");
         loader.loadClass(basePackage + "util.net.Nio2Endpoint$Nio2SocketWrapper$Nio2OperationState");
         loader.loadClass(basePackage + "util.net.SocketWrapperBase$BlockingMode");
@@ -197,8 +194,11 @@ public final class SecurityClassLoad {
         loader.loadClass(basePackage + "util.net.SocketWrapperBase$CompletionHandlerCall");
         loader.loadClass(basePackage + "util.net.SocketWrapperBase$CompletionState");
         loader.loadClass(basePackage + "util.net.SocketWrapperBase$VectoredIOCompletionHandler");
+        loader.loadClass(basePackage + "util.net.TLSClientHelloExtractor");
+        loader.loadClass(basePackage + "util.net.TLSClientHelloExtractor$ExtractorResult");
         // security
         loader.loadClass(basePackage + "util.security.PrivilegedGetTccl");
         loader.loadClass(basePackage + "util.security.PrivilegedSetTccl");
+        loader.loadClass(basePackage + "util.security.PrivilegedSetAccessControlContext");
     }
 }

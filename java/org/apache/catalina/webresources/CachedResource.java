@@ -24,8 +24,12 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLStreamHandler;
+import java.nio.charset.Charset;
 import java.security.Permission;
 import java.security.cert.Certificate;
+import java.text.Collator;
+import java.util.Arrays;
+import java.util.Locale;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
@@ -400,15 +404,40 @@ public class CachedResource implements WebResource {
         return webResources;
     }
 
+    boolean usesClassLoaderResources() {
+        return usesClassLoaderResources;
+    }
+
+
     // Assume that the cache entry will always include the content unless the
     // resource content is larger than objectMaxSizeBytes. This isn't always the
     // case but it makes tracking the current cache size easier.
     long getSize() {
         long result = CACHE_ENTRY_SIZE;
+        // Longer paths use a noticeable amount of memory so account for this in
+        // the cache size. The fixed component of a String instance's memory
+        // usage is accounted for in the 500 bytes above.
+        result += getWebappPath().length() * 2;
         if (getContentLength() <= objectMaxSizeBytes) {
             result += getContentLength();
         }
         return result;
+    }
+
+
+    /*
+     * Mimics the behaviour of FileURLConnection.getInputStream for a directory.
+     * Deliberately uses default locale.
+     */
+    private static InputStream buildInputStream(String[] files) {
+        Arrays.sort(files, Collator.getInstance(Locale.getDefault()));
+        StringBuilder result = new StringBuilder();
+        for (String file : files) {
+            result.append(file);
+            // Every entry is followed by \n including the last
+            result.append('\n');
+        }
+        return new ByteArrayInputStream(result.toString().getBytes(Charset.defaultCharset()));
     }
 
 
@@ -480,7 +509,12 @@ public class CachedResource implements WebResource {
 
         @Override
         public InputStream getInputStream() throws IOException {
-            return getResource().getInputStream();
+            WebResource resource = getResource();
+            if (resource.isDirectory()) {
+                return buildInputStream(resource.getWebResourceRoot().list(webAppPath));
+            } else {
+                return getResource().getInputStream();
+            }
         }
 
         @Override
@@ -531,7 +565,12 @@ public class CachedResource implements WebResource {
 
         @Override
         public InputStream getInputStream() throws IOException {
-            return getResource().getInputStream();
+            WebResource resource = getResource();
+            if (resource.isDirectory()) {
+                return buildInputStream(resource.getWebResourceRoot().list(webAppPath));
+            } else {
+                return getResource().getInputStream();
+            }
         }
 
         @Override

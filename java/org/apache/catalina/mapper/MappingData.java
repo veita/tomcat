@@ -14,10 +14,9 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-
 package org.apache.catalina.mapper;
 
-import javax.servlet.http.MappingMatch;
+import jakarta.servlet.http.MappingMatch;
 
 import org.apache.catalina.Context;
 import org.apache.catalina.Host;
@@ -38,14 +37,13 @@ public class MappingData {
     public Wrapper wrapper = null;
     public boolean jspWildCard = false;
 
-    public final MessageBytes contextPath = MessageBytes.newInstance();
     public final MessageBytes requestPath = MessageBytes.newInstance();
     public final MessageBytes wrapperPath = MessageBytes.newInstance();
     public final MessageBytes pathInfo = MessageBytes.newInstance();
 
     public final MessageBytes redirectPath = MessageBytes.newInstance();
 
-    // Fields used by ApplicationMapping to implement javax.servlet.http.HttpServletMapping
+    // Fields used by ApplicationMapping to implement jakarta.servlet.http.HttpServletMapping
     public MappingMatch matchType = null;
 
     public void recycle() {
@@ -55,7 +53,6 @@ public class MappingData {
         contexts = null;
         wrapper = null;
         jspWildCard = false;
-        contextPath.recycle();
         requestPath.recycle();
         wrapperPath.recycle();
         pathInfo.recycle();

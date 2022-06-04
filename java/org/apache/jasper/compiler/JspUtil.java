@@ -24,7 +24,6 @@ import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 
-import org.apache.jasper.Constants;
 import org.apache.jasper.JasperException;
 import org.apache.jasper.JspCompilationContext;
 import org.apache.tomcat.Jar;
@@ -168,16 +167,16 @@ public class JspUtil {
          */
         String missingAttribute = null;
 
-        for (int i = 0; i < validAttributes.length; i++) {
+        for (ValidAttribute validAttribute : validAttributes) {
             int attrPos;
-            if (validAttributes[i].mandatory) {
-                attrPos = temp.indexOf(validAttributes[i].name);
+            if (validAttribute.mandatory) {
+                attrPos = temp.indexOf(validAttribute.name);
                 if (attrPos != -1) {
                     temp.remove(attrPos);
                     valid = true;
                 } else {
                     valid = false;
-                    missingAttribute = validAttributes[i].name;
+                    missingAttribute = validAttribute.name;
                     break;
                 }
             }
@@ -198,8 +197,8 @@ public class JspUtil {
         // Now check to see if the rest of the attributes are valid too.
         for(String attribute : temp) {
             valid = false;
-            for (int i = 0; i < validAttributes.length; i++) {
-                if (attribute.equals(validAttributes[i].name)) {
+            for (ValidAttribute validAttribute : validAttributes) {
+                if (attribute.equals(validAttribute.name)) {
                     valid = true;
                     break;
                 }
@@ -394,7 +393,7 @@ public class JspUtil {
                         + ") "
                         + "org.apache.jasper.runtime.PageContextImpl.proprietaryEvaluate"
                         + "(" + Generator.quote(expression) + ", " + targetType
-                        + ".class, " + "(javax.servlet.jsp.PageContext)" + jspCtxt + ", "
+                        + ".class, " + "(jakarta.servlet.jsp.PageContext)" + jspCtxt + ", "
                         + fnmapvar + ")");
 
         /*
@@ -428,10 +427,10 @@ public class JspUtil {
                     + s + ", java.lang.Boolean.class)";
         } else {
             if (s == null || s.length() == 0) {
-                return "new java.lang.Boolean(false)";
+                return "java.lang.Boolean.FALSE";
             } else {
                 // Detect format error at translation time
-                return "new java.lang.Boolean(" + Boolean.valueOf(s).toString() + ")";
+                return "java.lang.Boolean.valueOf(" + Generator.quote(s) + ")";
             }
         }
     }
@@ -456,10 +455,10 @@ public class JspUtil {
                     + s + ", java.lang.Byte.class)";
         } else {
             if (s == null || s.length() == 0) {
-                return "new java.lang.Byte((byte) 0)";
+                return "java.lang.Byte.valueOf((byte) 0)";
             } else {
                 // Detect format error at translation time
-                return "new java.lang.Byte((byte)" + Byte.valueOf(s).toString() + ")";
+                return "java.lang.Byte.valueOf(" + Generator.quote(s) + ")";
             }
         }
     }
@@ -485,11 +484,11 @@ public class JspUtil {
                     + s + ", java.lang.Character.class)";
         } else {
             if (s == null || s.length() == 0) {
-                return "new java.lang.Character((char) 0)";
+                return "java.lang.Character.valueOf((char) 0)";
             } else {
                 char ch = s.charAt(0);
                 // this trick avoids escaping issues
-                return "new java.lang.Character((char) " + (int) ch + ")";
+                return "java.lang.Character.valueOf((char) " + (int) ch + ")";
             }
         }
     }
@@ -514,10 +513,10 @@ public class JspUtil {
                     + s + ", Double.class)";
         } else {
             if (s == null || s.length() == 0) {
-                return "new java.lang.Double(0)";
+                return "java.lang.Double.valueOf(0)";
             } else {
                 // Detect format error at translation time
-                return "new java.lang.Double(" + Double.valueOf(s).toString() + ")";
+                return "java.lang.Double.valueOf(" + Generator.quote(s) + ")";
             }
         }
     }
@@ -542,10 +541,10 @@ public class JspUtil {
                     + s + ", java.lang.Float.class)";
         } else {
             if (s == null || s.length() == 0) {
-                return "new java.lang.Float(0)";
+                return "java.lang.Float.valueOf(0)";
             } else {
                 // Detect format error at translation time
-                return "new java.lang.Float(" + Float.valueOf(s).toString() + "f)";
+                return "java.lang.Float.valueOf(" + Generator.quote(s) + ")";
             }
         }
     }
@@ -569,10 +568,10 @@ public class JspUtil {
                     + s + ", java.lang.Integer.class)";
         } else {
             if (s == null || s.length() == 0) {
-                return "new java.lang.Integer(0)";
+                return "java.lang.Integer.valueOf(0)";
             } else {
                 // Detect format error at translation time
-                return "new java.lang.Integer(" + Integer.valueOf(s).toString() + ")";
+                return "java.lang.Integer.valueOf(" + Generator.quote(s) + ")";
             }
         }
     }
@@ -597,10 +596,10 @@ public class JspUtil {
                     + s + ", java.lang.Short.class)";
         } else {
             if (s == null || s.length() == 0) {
-                return "new java.lang.Short((short) 0)";
+                return "java.lang.Short.valueOf((short) 0)";
             } else {
                 // Detect format error at translation time
-                return "new java.lang.Short(\"" + Short.valueOf(s).toString() + "\")";
+                return "java.lang.Short.valueOf(" + Generator.quote(s) + ")";
             }
         }
     }
@@ -625,10 +624,10 @@ public class JspUtil {
                     + s + ", java.lang.Long.class)";
         } else {
             if (s == null || s.length() == 0) {
-                return "new java.lang.Long(0)";
+                return "java.lang.Long.valueOf(0)";
             } else {
                 // Detect format error at translation time
-                return "new java.lang.Long(" + Long.valueOf(s).toString() + "l)";
+                return "java.lang.Long.valueOf(" + Generator.quote(s) + ")";
             }
         }
     }
@@ -639,7 +638,7 @@ public class JspUtil {
         InputStream in = null;
 
         if (jar != null) {
-            String jarEntryName = fname.substring(1, fname.length());
+            String jarEntryName = fname.substring(1);
             in = jar.getInputStream(jarEntryName);
         } else {
             in = ctxt.getResourceAsStream(fname);
@@ -657,7 +656,7 @@ public class JspUtil {
         throws IOException {
         InputSource source;
         if (jar != null) {
-            String jarEntryName = fname.substring(1, fname.length());
+            String jarEntryName = fname.substring(1);
             source = new InputSource(jar.getInputStream(jarEntryName));
             source.setSystemId(jar.getURL(jarEntryName));
         } else {
@@ -672,6 +671,7 @@ public class JspUtil {
      * the given tag file path.
      *
      * @param path Tag file path
+     * @param packageName The package name
      * @param urn The tag identifier
      * @param err Error dispatcher
      *
@@ -679,7 +679,7 @@ public class JspUtil {
      *         the given tag file path
      * @throws JasperException Failed to generate a class name for the tag
      */
-    public static String getTagHandlerClassName(String path, String urn,
+    public static String getTagHandlerClassName(String path, String packageName, String urn,
             ErrorDispatcher err) throws JasperException {
 
 
@@ -704,12 +704,12 @@ public class JspUtil {
 
         index = path.indexOf(WEB_INF_TAGS);
         if (index != -1) {
-            className = Constants.TAG_FILE_PACKAGE_NAME + ".web.";
+            className = packageName + ".web.";
             begin = index + WEB_INF_TAGS.length();
         } else {
             index = path.indexOf(META_INF_TAGS);
             if (index != -1) {
-                className = getClassNameBase(urn);
+                className = getClassNameBase(packageName, urn);
                 begin = index + META_INF_TAGS.length();
             } else {
                 err.jspError("jsp.error.tagfile.illegalPath", path);
@@ -721,9 +721,9 @@ public class JspUtil {
         return className;
     }
 
-    private static String getClassNameBase(String urn) {
+    private static String getClassNameBase(String packageName, String urn) {
         StringBuilder base =
-                new StringBuilder(Constants.TAG_FILE_PACKAGE_NAME + ".meta.");
+                new StringBuilder(packageName + ".meta.");
         if (urn != null) {
             base.append(makeJavaPackage(urn));
             base.append('.');
@@ -742,12 +742,12 @@ public class JspUtil {
     public static final String makeJavaPackage(String path) {
         String classNameComponents[] = path.split("/");
         StringBuilder legalClassNames = new StringBuilder();
-        for (int i = 0; i < classNameComponents.length; i++) {
-            if (classNameComponents[i].length() > 0) {
+        for (String classNameComponent : classNameComponents) {
+            if (classNameComponent.length() > 0) {
                 if (legalClassNames.length() > 0) {
                     legalClassNames.append('.');
                 }
-                legalClassNames.append(makeJavaIdentifier(classNameComponents[i]));
+                legalClassNames.append(makeJavaIdentifier(classNameComponent));
             }
         }
         return legalClassNames.toString();

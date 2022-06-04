@@ -19,7 +19,7 @@ package org.apache.tomcat.util.descriptor.web;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import javax.servlet.descriptor.JspPropertyGroupDescriptor;
+import jakarta.servlet.descriptor.JspPropertyGroupDescriptor;
 
 
 
@@ -65,6 +65,18 @@ public class JspPropertyGroupDescriptorImpl
 
         if (jspPropertyGroup.getElIgnored() != null) {
             result = jspPropertyGroup.getElIgnored().toString();
+        }
+
+        return result;
+    }
+
+
+    @Override
+    public String getErrorOnELNotFound() {
+        String result = null;
+
+        if (jspPropertyGroup.getErrorOnELNotFound() != null) {
+            result = jspPropertyGroup.getErrorOnELNotFound().toString();
         }
 
         return result;

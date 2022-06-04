@@ -27,9 +27,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.apache.catalina.Globals;
 import org.apache.catalina.security.SecurityUtil;
@@ -41,7 +41,6 @@ import org.apache.tomcat.util.res.StringManager;
  *
  * @author Remy Maucherat
  */
-@SuppressWarnings("deprecation")
 public class ResponseFacade implements HttpServletResponse {
 
     // ----------------------------------------------------------- DoPrivileged
@@ -424,30 +423,6 @@ public class ResponseFacade implements HttpServletResponse {
 
 
     @Override
-    public String encodeUrl(String url) {
-
-        if (response == null) {
-            throw new IllegalStateException(
-                            sm.getString("responseFacade.nullResponse"));
-        }
-
-        return response.encodeURL(url);
-    }
-
-
-    @Override
-    public String encodeRedirectUrl(String url) {
-
-        if (response == null) {
-            throw new IllegalStateException(
-                            sm.getString("responseFacade.nullResponse"));
-        }
-
-        return response.encodeRedirectURL(url);
-    }
-
-
-    @Override
     public void sendError(int sc, String msg)
         throws IOException {
 
@@ -586,17 +561,6 @@ public class ResponseFacade implements HttpServletResponse {
 
         response.setStatus(sc);
 
-    }
-
-
-    @Override
-    public void setStatus(int sc, String sm) {
-
-        if (isCommitted()) {
-            return;
-        }
-
-        response.setStatus(sc, sm);
     }
 
 

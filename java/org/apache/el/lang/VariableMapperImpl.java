@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.el.lang;
 
 import java.io.Externalizable;
@@ -24,8 +23,8 @@ import java.io.ObjectOutput;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.el.ValueExpression;
-import javax.el.VariableMapper;
+import jakarta.el.ValueExpression;
+import jakarta.el.VariableMapper;
 
 public class VariableMapperImpl extends VariableMapper implements Externalizable {
 

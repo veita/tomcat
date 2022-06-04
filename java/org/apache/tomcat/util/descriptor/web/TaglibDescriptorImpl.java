@@ -14,10 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.tomcat.util.descriptor.web;
 
-import javax.servlet.descriptor.TaglibDescriptor;
+import jakarta.servlet.descriptor.TaglibDescriptor;
 
 public class TaglibDescriptorImpl implements TaglibDescriptor {
 

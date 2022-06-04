@@ -14,13 +14,18 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-
 package org.apache.tomcat.jni;
 
 /** Fileinfo
  *
  * @author Mladen Turk
+ *
+ * @deprecated  The scope of the APR/Native Library will be reduced in Tomcat
+ *              10.1.x / Tomcat Native 2.x onwards to only include those
+ *              components required to provide OpenSSL integration with the NIO
+ *              and NIO2 connectors.
  */
+@Deprecated
 public class FileInfo {
 
     /** Allocates memory and closes lingering handles in the specified pool */

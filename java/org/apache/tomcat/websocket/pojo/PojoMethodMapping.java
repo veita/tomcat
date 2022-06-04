@@ -30,20 +30,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.websocket.CloseReason;
-import javax.websocket.DecodeException;
-import javax.websocket.Decoder;
-import javax.websocket.DeploymentException;
-import javax.websocket.EndpointConfig;
-import javax.websocket.MessageHandler;
-import javax.websocket.OnClose;
-import javax.websocket.OnError;
-import javax.websocket.OnMessage;
-import javax.websocket.OnOpen;
-import javax.websocket.PongMessage;
-import javax.websocket.Session;
-import javax.websocket.server.PathParam;
+import jakarta.websocket.CloseReason;
+import jakarta.websocket.DecodeException;
+import jakarta.websocket.Decoder;
+import jakarta.websocket.DeploymentException;
+import jakarta.websocket.EndpointConfig;
+import jakarta.websocket.MessageHandler;
+import jakarta.websocket.OnClose;
+import jakarta.websocket.OnError;
+import jakarta.websocket.OnMessage;
+import jakarta.websocket.OnOpen;
+import jakarta.websocket.PongMessage;
+import jakarta.websocket.Session;
+import jakarta.websocket.server.PathParam;
 
+import org.apache.tomcat.InstanceManager;
 import org.apache.tomcat.util.res.StringManager;
 import org.apache.tomcat.websocket.DecoderEntry;
 import org.apache.tomcat.websocket.Util;
@@ -51,7 +52,7 @@ import org.apache.tomcat.websocket.Util.DecoderMatch;
 
 /**
  * For a POJO class annotated with
- * {@link javax.websocket.server.ServerEndpoint}, an instance of this class
+ * {@link jakarta.websocket.server.ServerEndpoint}, an instance of this class
  * creates and caches the method handler, method information and parameter
  * information for the onXXX calls.
  */
@@ -70,13 +71,22 @@ public class PojoMethodMapping {
     private final String wsPath;
 
 
-    public PojoMethodMapping(Class<?> clazzPojo,
-            List<Class<? extends Decoder>> decoderClazzes, String wsPath)
-                    throws DeploymentException {
+    /**
+     * Create a method mapping for the given POJO
+     *
+     * @param clazzPojo         POJO implementation class
+     * @param decoderClazzes    Set of potential decoder classes
+     * @param wsPath            Path at which the endpoint will be deployed
+     * @param instanceManager   Instance manager to use to create Decoder instances
+     *
+     * @throws DeploymentException If the mapping cannot be completed
+     */
+    public PojoMethodMapping(Class<?> clazzPojo, List<Class<? extends Decoder>> decoderClazzes, String wsPath,
+            InstanceManager instanceManager) throws DeploymentException {
 
         this.wsPath = wsPath;
 
-        List<DecoderEntry> decoders = Util.getDecoders(decoderClazzes);
+        List<DecoderEntry> decoders = Util.getDecoders(decoderClazzes, instanceManager);
         Method open = null;
         Method close = null;
         Method error = null;

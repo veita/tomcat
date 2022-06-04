@@ -14,8 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-
 package org.apache.jasper.tagplugins.jstl;
 
 import java.io.ByteArrayOutputStream;
@@ -25,16 +23,15 @@ import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.Locale;
 
-import javax.servlet.ServletOutputStream;
-import javax.servlet.WriteListener;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpServletResponseWrapper;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.JspTagException;
-import javax.servlet.jsp.PageContext;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.WriteListener;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponseWrapper;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.JspTagException;
+import jakarta.servlet.jsp.PageContext;
 
-import org.apache.jasper.Constants;
 import org.apache.jasper.compiler.Localizer;
 
 /**
@@ -128,10 +125,14 @@ public class Util {
         int begin;
         int end;
         int index = input.toUpperCase(Locale.ENGLISH).indexOf(name.toUpperCase(Locale.ENGLISH));
-        if (index == -1) return null;
+        if (index == -1) {
+            return null;
+        }
         index = index + name.length(); // positioned after the attribute name
         index = input.indexOf('=', index); // positioned at the '='
-        if (index == -1) return null;
+        if (index == -1) {
+            return null;
+        }
         index += 1; // positioned after the '='
         input = input.substring(index).trim();
 
@@ -139,40 +140,21 @@ public class Util {
             // attribute value is a quoted string
             begin = 1;
             end = input.indexOf('"', begin);
-            if (end == -1) return null;
+            if (end == -1) {
+                return null;
+            }
         } else {
             begin = 0;
             end = input.indexOf(';');
-            if (end == -1) end = input.indexOf(' ');
-            if (end == -1) end = input.length();
+            if (end == -1) {
+                end = input.indexOf(' ');
+            }
+            if (end == -1) {
+                end = input.length();
+            }
         }
         return input.substring(begin, end).trim();
     }
-
-    /**
-     * Strips a servlet session ID from <code>url</code>.  The session ID
-     * is encoded as a URL "path parameter" beginning with "jsessionid=".
-     * We thus remove anything we find between ";jsessionid=" (inclusive)
-     * and either EOS or a subsequent ';' (exclusive).
-     *
-     * taken from org.apache.taglibs.standard.tag.common.core.ImportSupport
-     * @param url The URL
-     * @return the URL without a user submitted session id parameter
-     */
-    public static String stripSession(String url) {
-        StringBuilder u = new StringBuilder(url);
-        int sessionStart;
-        while ((sessionStart = u.toString().indexOf(";" + Constants.SESSION_PARAMETER_NAME + "=")) != -1) {
-            int sessionEnd = u.toString().indexOf(';', sessionStart + 1);
-            if (sessionEnd == -1)
-                sessionEnd = u.toString().indexOf('?', sessionStart + 1);
-            if (sessionEnd == -1) // still
-                sessionEnd = u.length();
-            u.delete(sessionStart, sessionEnd);
-        }
-        return u.toString();
-    }
-
 
     /**
      * Performs the following substring replacements
@@ -247,17 +229,19 @@ public class Util {
             String url, String context, PageContext pageContext)
     throws JspException {
         // don't touch absolute URLs
-        if (isAbsoluteUrl(url))
+        if (isAbsoluteUrl(url)) {
             return url;
+        }
 
         // normalize relative URLs against a context root
         HttpServletRequest request =
             (HttpServletRequest) pageContext.getRequest();
         if (context == null) {
-            if (url.startsWith("/"))
+            if (url.startsWith("/")) {
                 return request.getContextPath() + url;
-            else
+            } else {
                 return url;
+            }
         } else {
             if (!context.startsWith("/") || !url.startsWith("/")) {
                 throw new JspTagException(Localizer.getMessage("jstl.urlMustStartWithSlash"));
@@ -312,16 +296,18 @@ public class Util {
 
         @Override
         public PrintWriter getWriter() {
-            if (isStreamUsed)
+            if (isStreamUsed) {
                 throw new IllegalStateException(Localizer.getMessage("jstl.writerAfterOS"));
+            }
             isWriterUsed = true;
             return new PrintWriter(sw);
         }
 
         @Override
         public ServletOutputStream getOutputStream() {
-            if (isWriterUsed)
+            if (isWriterUsed) {
                 throw new IllegalStateException(Localizer.getMessage("jstl.OSAfterWriter"));
+            }
             isStreamUsed = true;
             return sos;
         }
@@ -355,15 +341,18 @@ public class Util {
         }
 
         public String getString() throws UnsupportedEncodingException {
-            if (isWriterUsed)
+            if (isWriterUsed) {
                 return sw.toString();
-            else if (isStreamUsed) {
-                if (this.charEncoding != null && !this.charEncoding.equals(""))
+            } else if (isStreamUsed) {
+                if (this.charEncoding != null && !this.charEncoding.equals("")) {
                     return bos.toString(charEncoding);
-                else
+                } else {
                     return bos.toString("ISO-8859-1");
-            } else
+                }
+            }
+            else {
                 return ""; // target didn't write anything
+            }
         }
     }
 

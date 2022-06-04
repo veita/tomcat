@@ -17,11 +17,11 @@
 package listeners;
 
 
-import javax.servlet.ServletContext;
-import javax.servlet.ServletContextAttributeEvent;
-import javax.servlet.ServletContextAttributeListener;
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletContextAttributeEvent;
+import jakarta.servlet.ServletContextAttributeListener;
+import jakarta.servlet.ServletContextEvent;
+import jakarta.servlet.ServletContextListener;
 
 
 /**
@@ -128,10 +128,11 @@ public final class ContextListener
      */
     private void log(String message) {
 
-        if (context != null)
+        if (context != null) {
             context.log("ContextListener: " + message);
-        else
+        } else {
             System.out.println("ContextListener: " + message);
+        }
 
     }
 

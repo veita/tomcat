@@ -14,10 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.jasper.compiler;
 
-import javax.el.ValueExpression;
+import jakarta.el.ValueExpression;
 
 import org.junit.Assert;
 import org.junit.Test;

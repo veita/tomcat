@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.catalina.core;
 
 import java.nio.charset.StandardCharsets;
@@ -24,9 +23,9 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import javax.servlet.MultipartConfigElement;
-import javax.servlet.ServletRegistration;
-import javax.servlet.ServletSecurityElement;
+import jakarta.servlet.MultipartConfigElement;
+import jakarta.servlet.ServletRegistration;
+import jakarta.servlet.ServletSecurityElement;
 
 import org.apache.catalina.Context;
 import org.apache.catalina.LifecycleState;
@@ -35,14 +34,12 @@ import org.apache.catalina.util.ParameterMap;
 import org.apache.tomcat.util.buf.UDecoder;
 import org.apache.tomcat.util.res.StringManager;
 
-public class ApplicationServletRegistration
-        implements ServletRegistration.Dynamic {
+public class ApplicationServletRegistration implements ServletRegistration.Dynamic {
 
     /**
      * The string manager for this package.
      */
-    private static final StringManager sm =
-      StringManager.getManager(Constants.Package);
+    private static final StringManager sm = StringManager.getManager(ApplicationServletRegistration.class);
 
     private final Wrapper wrapper;
     private final Context context;

@@ -18,12 +18,12 @@ package org.apache.coyote;
 
 /**
  * Provides a mechanism for the Coyote connectors to communicate with the
- * {@link javax.servlet.AsyncContext}. It is implemented in this manner so that
+ * {@link jakarta.servlet.AsyncContext}. It is implemented in this manner so that
  * the org.apache.coyote package does not have a dependency on the
  * org.apache.catalina package.
  */
 public interface AsyncContextCallback {
-    public void fireOnComplete();
+    void fireOnComplete();
 
     /**
      * Reports if the web application associated with this async request is
@@ -32,5 +32,21 @@ public interface AsyncContextCallback {
      * @return {@code true} if the associated web application is available,
      *         otherwise {@code false}
      */
-    public boolean isAvailable();
+    boolean isAvailable();
+
+    /**
+     * Used to notify the Context that async processing has started.
+     * Specifically, for the counting of in-progress async requests to work
+     * correctly, this must be called exactly once every time the
+     * {@link AsyncStateMachine} transitions from DISPATCHED to any other state.
+     */
+    void incrementInProgressAsyncCount();
+
+    /**
+     * Used to notify the Context that async processing has ended.
+     * Specifically, for the counting of in-progress async requests to work
+     * correctly, this must be called exactly once every time the
+     * {@link AsyncStateMachine} transitions to DISPATCHED from any other state.
+     */
+    void decrementInProgressAsyncCount();
 }

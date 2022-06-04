@@ -17,7 +17,6 @@
 package org.apache.catalina.tribes.demos;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.Properties;
 
 import org.apache.catalina.tribes.Channel;
@@ -34,6 +33,7 @@ import org.apache.catalina.tribes.group.interceptors.TcpFailureDetector;
 import org.apache.catalina.tribes.group.interceptors.ThroughputInterceptor;
 import org.apache.catalina.tribes.membership.McastService;
 import org.apache.catalina.tribes.membership.MemberImpl;
+import org.apache.catalina.tribes.transport.Constants;
 import org.apache.catalina.tribes.transport.MultiPointSender;
 import org.apache.catalina.tribes.transport.ReceiverBase;
 import org.apache.catalina.tribes.transport.ReplicationTransmitter;
@@ -178,8 +178,8 @@ public class ChannelCreator {
         rx.setMaxThreads(tcpthreadcount);
         rx.setMinThreads(tcpthreadcount);
         rx.getBind();
-        rx.setRxBufSize(43800);
-        rx.setTxBufSize(25188);
+        rx.setRxBufSize(Constants.DEFAULT_CLUSTER_MSG_BUFFER_SIZE);
+        rx.setTxBufSize(Constants.DEFAULT_CLUSTER_ACK_BUFFER_SIZE);
         rx.setAutoBind(autoBind);
 
 
@@ -189,19 +189,20 @@ public class ChannelCreator {
                 transport,true,ChannelCreator.class.getClassLoader()).getConstructor().newInstance();
         sender.setTimeout(acktimeout);
         sender.setMaxRetryAttempts(2);
-        sender.setRxBufSize(43800);
-        sender.setTxBufSize(25188);
+        sender.setRxBufSize(Constants.DEFAULT_CLUSTER_MSG_BUFFER_SIZE);
+        sender.setTxBufSize(Constants.DEFAULT_CLUSTER_ACK_BUFFER_SIZE);
 
-        Iterator<Object> i = transportProperties.keySet().iterator();
-        while ( i.hasNext() ) {
-            String key = (String)i.next();
-            IntrospectionUtils.setProperty(sender,key,transportProperties.getProperty(key));
+        for (Object o : transportProperties.keySet()) {
+            String key = (String) o;
+            IntrospectionUtils.setProperty(sender, key, transportProperties.getProperty(key));
         }
         ps.setTransport(sender);
 
         McastService service = new McastService();
         service.setAddress(mcastaddr);
-        if (mbind != null) service.setMcastBindAddress(mbind);
+        if (mbind != null) {
+          service.setMcastBindAddress(mbind);
+        }
         service.setFrequency(mcastfreq);
         service.setMcastDropTime(mcastdrop);
         service.setPort(mcastport);
@@ -211,8 +212,12 @@ public class ChannelCreator {
         channel.setChannelSender(ps);
         channel.setMembershipService(service);
 
-        if ( throughput ) channel.addInterceptor(new ThroughputInterceptor());
-        if (gzip) channel.addInterceptor(new GzipInterceptor());
+        if ( throughput ) {
+          channel.addInterceptor(new ThroughputInterceptor());
+        }
+        if (gzip) {
+          channel.addInterceptor(new GzipInterceptor());
+        }
         if ( frag ) {
             FragmentationInterceptor fi = new FragmentationInterceptor();
             fi.setMaxSize(fragsize);
@@ -237,8 +242,8 @@ public class ChannelCreator {
         }
         if ( staticMembers.size() > 0 ) {
             StaticMembershipInterceptor smi = new StaticMembershipInterceptor();
-            for (int x=0; x<staticMembers.size(); x++ ) {
-                smi.addStaticMember(staticMembers.get(x));
+            for (Member staticMember : staticMembers) {
+                smi.addStaticMember(staticMember);
             }
             channel.addInterceptor(smi);
         }

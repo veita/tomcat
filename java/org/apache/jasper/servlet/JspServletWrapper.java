@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.jasper.servlet;
 
 import java.io.FileNotFoundException;
@@ -22,16 +21,15 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.servlet.RequestDispatcher;
-import javax.servlet.Servlet;
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.SingleThreadModel;
-import javax.servlet.UnavailableException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.jsp.tagext.TagInfo;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.Servlet;
+import jakarta.servlet.ServletConfig;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.UnavailableException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.jsp.tagext.TagInfo;
 
 import org.apache.jasper.JasperException;
 import org.apache.jasper.JspCompilationContext;
@@ -67,8 +65,6 @@ import org.apache.tomcat.Jar;
  * @author Glenn Nielsen
  * @author Tim Fennell
  */
-
-@SuppressWarnings("deprecation") // Have to support SingleThreadModel
 public class JspServletWrapper {
 
     private static final Map<String,Long> ALWAYS_OUTDATED_DEPENDENCIES =
@@ -418,20 +414,10 @@ public class JspServletWrapper {
                 return;
             }
 
-        } catch (ServletException ex) {
-            if (options.getDevelopment()) {
-                throw handleJspException(ex);
-            }
-            throw ex;
         } catch (FileNotFoundException fnfe) {
             // File has been removed. Let caller handle this.
             throw fnfe;
-        } catch (IOException ex) {
-            if (options.getDevelopment()) {
-                throw handleJspException(ex);
-            }
-            throw ex;
-        } catch (IllegalStateException ex) {
+        } catch (ServletException | IOException | IllegalStateException ex) {
             if (options.getDevelopment()) {
                 throw handleJspException(ex);
             }
@@ -467,15 +453,7 @@ public class JspServletWrapper {
             /*
              * (4) Service request
              */
-            if (servlet instanceof SingleThreadModel) {
-               // sync on the wrapper so that the freshness
-               // of the page is determined right before servicing
-               synchronized (this) {
-                   servlet.service(request, response);
-                }
-            } else {
-                servlet.service(request, response);
-            }
+            servlet.service(request, response);
         } catch (UnavailableException ex) {
             String includeRequestUri = (String)
                 request.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI);
@@ -495,7 +473,7 @@ public class JspServletWrapper {
             response.sendError
                 (HttpServletResponse.SC_SERVICE_UNAVAILABLE,
                  ex.getMessage());
-        } catch (ServletException ex) {
+        } catch (ServletException | IllegalStateException ex) {
             if(options.getDevelopment()) {
                 throw handleJspException(ex);
             }
@@ -503,11 +481,6 @@ public class JspServletWrapper {
         } catch (IOException ex) {
             if (options.getDevelopment()) {
                 throw new IOException(handleJspException(ex).getMessage(), ex);
-            }
-            throw ex;
-        } catch (IllegalStateException ex) {
-            if(options.getDevelopment()) {
-                throw handleJspException(ex);
             }
             throw ex;
         } catch (Exception ex) {

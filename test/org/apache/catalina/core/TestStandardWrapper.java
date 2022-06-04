@@ -21,27 +21,22 @@ import java.io.IOException;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.servlet.Servlet;
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletContainerInitializer;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRegistration;
-import javax.servlet.annotation.HttpConstraint;
-import javax.servlet.annotation.HttpMethodConstraint;
-import javax.servlet.annotation.ServletSecurity;
-import javax.servlet.annotation.ServletSecurity.EmptyRoleSemantic;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.Servlet;
+import jakarta.servlet.ServletContainerInitializer;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRegistration;
+import jakarta.servlet.annotation.HttpConstraint;
+import jakarta.servlet.annotation.HttpMethodConstraint;
+import jakarta.servlet.annotation.ServletSecurity;
+import jakarta.servlet.annotation.ServletSecurity.EmptyRoleSemantic;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -196,7 +191,7 @@ public class TestStandardWrapper extends TomcatBaseTest {
         // Setup Tomcat instance
         Tomcat tomcat = getTomcatInstance();
 
-        File appDir = new File("test/webapp-servletsecurity");
+        File appDir = new File("test/webapp-servletsecurity-a");
         tomcat.addWebapp(null, "", appDir.getAbsolutePath());
 
         tomcat.start();
@@ -215,7 +210,7 @@ public class TestStandardWrapper extends TomcatBaseTest {
         // Setup Tomcat instance
         Tomcat tomcat = getTomcatInstance();
 
-        File appDir = new File("test/webapp-servletsecurity2");
+        File appDir = new File("test/webapp-servletsecurity-b");
         tomcat.addWebapp(null, "", appDir.getAbsolutePath());
 
         tomcat.start();
@@ -485,179 +480,6 @@ public class TestStandardWrapper extends TomcatBaseTest {
             }
             ServletRegistration.Dynamic r = ctx.addServlet("servlet", s);
             r.addMapping("/");
-        }
-    }
-
-
-    public static final int BUG51445_THREAD_COUNT = 5;
-
-    public static CountDownLatch latch = null;
-    public static final AtomicInteger counter = new AtomicInteger(0);
-
-    public static void initLatch() {
-        latch = new CountDownLatch(BUG51445_THREAD_COUNT);
-    }
-
-    @Test
-    public void testBug51445AddServlet() throws Exception {
-
-        initLatch();
-
-        Tomcat tomcat = getTomcatInstance();
-
-        // No file system docBase required
-        Context ctx = tomcat.addContext("", null);
-
-        Tomcat.addServlet(ctx, "Bug51445", new Bug51445Servlet());
-        ctx.addServletMappingDecoded("/", "Bug51445");
-
-        tomcat.start();
-
-        // Start the threads
-        Bug51445Thread[] threads = new Bug51445Thread[5];
-        for (int i = 0; i < BUG51445_THREAD_COUNT; i ++) {
-            threads[i] = new Bug51445Thread(getPort());
-            threads[i].start();
-        }
-
-        // Wait for threads to finish
-        for (int i = 0; i < BUG51445_THREAD_COUNT; i ++) {
-            threads[i].join();
-        }
-
-        Set<String> servlets = new HashSet<>();
-        // Output the result
-        for (int i = 0; i < BUG51445_THREAD_COUNT; i ++) {
-            System.out.println(threads[i].getResult());
-        }
-
-        // Check the result
-        for (int i = 0; i < BUG51445_THREAD_COUNT; i ++) {
-            String[] results = threads[i].getResult().split(",");
-            Assert.assertEquals(2, results.length);
-            Assert.assertEquals("10", results[0]);
-            Assert.assertFalse(servlets.contains(results[1]));
-            servlets.add(results[1]);
-        }
-    }
-
-    @Test
-    public void testBug51445AddChild() throws Exception {
-
-        initLatch();
-
-        Tomcat tomcat = getTomcatInstance();
-
-        // No file system docBase required
-        Context ctx = tomcat.addContext("", null);
-
-        StandardWrapper wrapper = new StandardWrapper();
-        wrapper.setServletName("Bug51445");
-        wrapper.setServletClass(Bug51445Servlet.class.getName());
-        ctx.addChild(wrapper);
-        ctx.addServletMappingDecoded("/", "Bug51445");
-
-        tomcat.start();
-
-        // Start the threads
-        Bug51445Thread[] threads = new Bug51445Thread[5];
-        for (int i = 0; i < BUG51445_THREAD_COUNT; i ++) {
-            threads[i] = new Bug51445Thread(getPort());
-            threads[i].start();
-        }
-
-        // Wait for threads to finish
-        for (int i = 0; i < BUG51445_THREAD_COUNT; i ++) {
-            threads[i].join();
-        }
-
-        Set<String> servlets = new HashSet<>();
-        // Output the result
-        for (int i = 0; i < BUG51445_THREAD_COUNT; i ++) {
-            System.out.println(threads[i].getResult());
-        }
-        // Check the result
-        for (int i = 0; i < BUG51445_THREAD_COUNT; i ++) {
-            String[] results = threads[i].getResult().split(",");
-            Assert.assertEquals(2, results.length);
-            Assert.assertEquals("10", results[0]);
-            Assert.assertFalse(servlets.contains(results[1]));
-            servlets.add(results[1]);
-        }
-    }
-
-    private static class Bug51445Thread extends Thread {
-
-        private int port;
-        private String result;
-
-        public Bug51445Thread(int port) {
-            this.port = port;
-        }
-
-        @Override
-        public void run() {
-            try {
-                ByteChunk res = getUrl("http://localhost:" + port + "/");
-                result = res.toString();
-            } catch (IOException ioe) {
-                result = ioe.getMessage();
-            }
-        }
-
-        public String getResult() {
-            return result;
-        }
-    }
-
-    /**
-     * SingleThreadModel servlet that sets a value in the init() method.
-     */
-    @SuppressWarnings("deprecation")
-    public static class Bug51445Servlet extends HttpServlet
-            implements javax.servlet.SingleThreadModel {
-
-        private static final long serialVersionUID = 1L;
-        private static final long LATCH_TIMEOUT = 60;
-
-        private int data = 0;
-        private int counter;
-
-        public Bug51445Servlet() {
-            // Use this rather than hashCode since in some environments,
-            // multiple instances of this object were created with the same
-            // hashCode
-            counter = TestStandardWrapper.counter.incrementAndGet();
-        }
-
-        @Override
-        protected void doGet(HttpServletRequest req, HttpServletResponse resp)
-                throws ServletException, IOException {
-
-            boolean latchAwaitResult = false;
-
-            // Ensure all threads have their own instance of the servlet
-            latch.countDown();
-            try {
-                latchAwaitResult = latch.await(LATCH_TIMEOUT, TimeUnit.SECONDS);
-            } catch (InterruptedException e) {
-                // Ignore
-            }
-
-            resp.setContentType("text/plain");
-            if (latchAwaitResult) {
-                resp.getWriter().print(data);
-            } else {
-                resp.getWriter().print("Latch await failed");
-            }
-            resp.getWriter().print(",");
-            resp.getWriter().print(counter);
-        }
-
-        @Override
-        public void init(ServletConfig config) throws ServletException {
-            super.init(config);
-            data = 10;
         }
     }
 }

@@ -22,11 +22,12 @@ import java.io.IOException;
 import java.security.AccessController;
 import java.util.Collection;
 
-import javax.servlet.jsp.tagext.TagFileInfo;
-import javax.servlet.jsp.tagext.TagInfo;
-import javax.servlet.jsp.tagext.TagLibraryInfo;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
+
+import jakarta.servlet.jsp.tagext.TagFileInfo;
+import jakarta.servlet.jsp.tagext.TagInfo;
+import jakarta.servlet.jsp.tagext.TagLibraryInfo;
 
 import org.apache.jasper.Constants;
 import org.apache.jasper.JasperException;
@@ -167,7 +168,8 @@ class JspDocumentParser
         try {
 
             // Create dummy root and initialize it with given page encodings
-            Node.Root dummyRoot = new Node.Root(null, parent, true);
+            Node.Root dummyRoot = new Node.Root(null, parent, true,
+                    pc.getJspCompilationContext().getOptions().getTempVariableNamePrefix());
             dummyRoot.setPageEncoding(pageEnc);
             dummyRoot.setJspConfigPageEncoding(jspConfigPageEnc);
             dummyRoot.setIsEncodingSpecifiedInProlog(
@@ -593,10 +595,11 @@ class JspDocumentParser
                             startMark = new Mark(ctxt, path, line, column);
                             break;
                         }
-                        if (ch == '"')
+                        if (ch == '"') {
                             doubleQ = !doubleQ;
-                        else if (ch == '\'')
+                        } else if (ch == '\'') {
                             singleQ = !singleQ;
+                        }
 
                         ttext.write(ch);
                         lastCh = ch;
@@ -1351,10 +1354,12 @@ class JspDocumentParser
                 Node n = body.getNode(i);
                 if (!(n instanceof Node.TemplateText)) {
                     String elemType = SCRIPTLET_ACTION;
-                    if (scriptingElem instanceof Node.Declaration)
+                    if (scriptingElem instanceof Node.Declaration) {
                         elemType = DECLARATION_ACTION;
-                    if (scriptingElem instanceof Node.Expression)
+                    }
+                    if (scriptingElem instanceof Node.Expression) {
                         elemType = EXPRESSION_ACTION;
+                    }
                     String msg =
                         Localizer.getMessage(
                             "jsp.error.parse.xml.scripting.invalid.body",

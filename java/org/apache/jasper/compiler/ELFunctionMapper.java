@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.jasper.compiler;
 
 import java.security.AccessController;
@@ -26,7 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.servlet.jsp.tagext.FunctionInfo;
+import jakarta.servlet.jsp.tagext.FunctionInfo;
 
 import org.apache.jasper.Constants;
 import org.apache.jasper.JasperException;
@@ -239,8 +238,7 @@ public class ELFunctionMapper {
                         int iArray = params[k].indexOf('[');
                         if (iArray < 0) {
                             ds.append(params[k] + ".class");
-                        }
-                        else {
+                        } else {
                             String baseType = params[k].substring(0, iArray);
                             ds.append("java.lang.reflect.Array.newInstance(");
                             ds.append(baseType);

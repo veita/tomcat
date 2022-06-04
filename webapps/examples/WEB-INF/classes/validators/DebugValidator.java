@@ -14,17 +14,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
-
 package validators;
 
 
 import java.io.IOException;
 import java.io.InputStream;
 
-import javax.servlet.jsp.tagext.PageData;
-import javax.servlet.jsp.tagext.TagLibraryValidator;
-import javax.servlet.jsp.tagext.ValidationMessage;
+import jakarta.servlet.jsp.tagext.PageData;
+import jakarta.servlet.jsp.tagext.TagLibraryValidator;
+import jakarta.servlet.jsp.tagext.ValidationMessage;
 
 
 /**
@@ -67,8 +65,9 @@ public class DebugValidator extends TagLibraryValidator {
         while (true) {
             try {
                 int ch = is.read();
-                if (ch < 0)
+                if (ch < 0) {
                     break;
+                }
                 System.out.print((char) ch);
             } catch (IOException e) {
                 break;

@@ -30,17 +30,17 @@ import java.util.NoSuchElementException;
 import java.util.StringTokenizer;
 import java.util.regex.Pattern;
 
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.WriteListener;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpServletResponseWrapper;
-import javax.servlet.http.MappingMatch;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.FilterConfig;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.WriteListener;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponseWrapper;
+import jakarta.servlet.http.MappingMatch;
 
 import org.apache.juli.logging.Log;
 import org.apache.juli.logging.LogFactory;
@@ -81,7 +81,7 @@ import org.apache.juli.logging.LogFactory;
  * </p>
  * <h2>Filter Configuration</h2><h3>Basic configuration to add
  * '{@code Expires}' and '{@code Cache-Control: max-age=}'
- * headers to images, css and javascript</h3>
+ * headers to images, CSS and JavaScript</h3>
  *
  * <pre>
  * {@code
@@ -492,7 +492,7 @@ public class ExpiresFilter extends FilterBase {
         private final List<Duration> durations;
 
         /**
-         * Starting point of the elaspse to set in the response.
+         * Starting point of the elapse to set in the response.
          */
         private final StartingPoint startingPoint;
 
@@ -520,8 +520,8 @@ public class ExpiresFilter extends FilterBase {
 
     /**
      * Expiration configuration starting point. Either the time the
-     * html-page/servlet-response was served ({@link StartingPoint#ACCESS_TIME})
-     * or the last time the html-page/servlet-response was modified (
+     * HTML-page/servlet-response was served ({@link StartingPoint#ACCESS_TIME})
+     * or the last time the HTML-page/servlet-response was modified (
      * {@link StartingPoint#LAST_MODIFICATION_TIME}).
      */
     protected enum StartingPoint {
@@ -1137,7 +1137,7 @@ public class ExpiresFilter extends FilterBase {
     /**
      * @param str The String to check
      * @return {@code true} if the given {@code str} has at least one
-     * character (can be a withespace).
+     * character (can be a whitespace).
      */
     protected static boolean isNotEmpty(String str) {
         return !isEmpty(str);
@@ -1217,7 +1217,7 @@ public class ExpiresFilter extends FilterBase {
             if (response.isCommitted()) {
                 if (log.isDebugEnabled()) {
                     log.debug(sm.getString(
-                            "expiresFilter.responseAlreadyCommited",
+                            "expiresFilter.responseAlreadyCommitted",
                             httpRequest.getRequestURL()));
                 }
                 chain.doFilter(request, response);
@@ -1246,27 +1246,6 @@ public class ExpiresFilter extends FilterBase {
 
     public int[] getExcludedResponseStatusCodesAsInts() {
         return excludedResponseStatusCodes;
-    }
-
-
-    /**
-     * Returns the expiration date of the given {@link XHttpServletResponse} or
-     * {@code null} if no expiration date has been configured for the
-     * declared content type.
-     * <p>
-     * {@code protected} for extension.
-     *
-     * @param response The wrapped HTTP response
-     *
-     * @return the expiration date
-     * @see HttpServletResponse#getContentType()
-     *
-     * @deprecated  Will be removed in Tomcat 10.
-     *              Use {@link #getExpirationDate(HttpServletRequest, XHttpServletResponse)}
-     */
-    @Deprecated
-    protected Date getExpirationDate(XHttpServletResponse response) {
-        return getExpirationDate((HttpServletRequest) null, response);
     }
 
 

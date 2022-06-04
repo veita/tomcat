@@ -24,6 +24,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.catalina.WebResource;
+import org.apache.catalina.WebResourceRoot.CacheStrategy;
 import org.apache.juli.logging.Log;
 import org.apache.juli.logging.LogFactory;
 import org.apache.tomcat.util.res.StringManager;
@@ -45,6 +46,7 @@ public class Cache {
     private long ttl = 5000;
     private long maxSize = 10 * 1024 * 1024;
     private int objectMaxSize = (int) maxSize/OBJECT_MAX_SIZE_FACTOR;
+    private CacheStrategy cacheStrategy;
 
     private AtomicLong lookupCount = new AtomicLong(0);
     private AtomicLong hitCount = new AtomicLong(0);
@@ -60,6 +62,13 @@ public class Cache {
 
         if (noCache(path)) {
             return root.getResourceInternal(path, useClassLoaderResources);
+        }
+
+        CacheStrategy strategy = getCacheStrategy();
+        if (strategy != null) {
+            if (strategy.noCache(path)) {
+                return root.getResourceInternal(path, useClassLoaderResources);
+            }
         }
 
         lookupCount.incrementAndGet();
@@ -108,6 +117,24 @@ public class Cache {
                 }
             } else {
                 // Another thread added the entry to the cache
+                if (cacheEntry.usesClassLoaderResources() != useClassLoaderResources) {
+                    // Race condition adding cache entries with the same path
+                    // but differing values for useClassLoaderResources.
+                    // Cache only supports one entry per path with one value of
+                    // useClassLoaderResources.
+                    // Let the other thread "win" and add the resource to the
+                    // cache. This thread will receive a cacheEntry instance
+                    // that isn't added to the cache.
+                    // There are assumptions here. They are:
+                    // - refactoring the Cache to use a combined key of
+                    //   path+useClassLoaderResources adds unnecessary
+                    //   complexity
+                    // - the race condition is rare (over the lifetime of an
+                    //   application)
+                    // - it would be rare for an application to need to cache a
+                    //   resource for both values of useClassLoaderResources
+                    cacheEntry = newCacheEntry;
+                }
                 // Make sure it is validated
                 cacheEntry.validateResource(useClassLoaderResources);
             }
@@ -241,6 +268,14 @@ public class Cache {
             long delta = cachedResource.getSize();
             size.addAndGet(-delta);
         }
+    }
+
+    public CacheStrategy getCacheStrategy() {
+        return cacheStrategy;
+    }
+
+    public void setCacheStrategy(CacheStrategy cacheStrategy) {
+        this.cacheStrategy = cacheStrategy;
     }
 
     public long getTtl() {

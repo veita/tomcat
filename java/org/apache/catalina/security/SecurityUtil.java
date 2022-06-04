@@ -27,12 +27,13 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.security.auth.Subject;
-import javax.servlet.Filter;
-import javax.servlet.Servlet;
-import javax.servlet.ServletException;
-import javax.servlet.UnavailableException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
+
+import jakarta.servlet.Filter;
+import jakarta.servlet.Servlet;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.UnavailableException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 
 import org.apache.catalina.Globals;
 import org.apache.juli.logging.Log;
@@ -276,13 +277,10 @@ public final class SecurityUtil{
         try{
             Subject subject = null;
             PrivilegedExceptionAction<Void> pea =
-                new PrivilegedExceptionAction<Void>(){
-                    @Override
-                    public Void run() throws Exception{
+                    () -> {
                        method.invoke(targetObject, targetArguments);
                        return null;
-                    }
-            };
+                    };
 
             // The first argument is always the request object
             if (targetArguments != null
@@ -325,16 +323,17 @@ public final class SecurityUtil{
                 log.debug(sm.getString("SecurityUtil.doAsPrivilege"), e);
             }
 
-            if (e instanceof UnavailableException)
+            if (e instanceof UnavailableException) {
                 throw (UnavailableException) e;
-            else if (e instanceof ServletException)
+            } else if (e instanceof ServletException) {
                 throw (ServletException) e;
-            else if (e instanceof IOException)
+            } else if (e instanceof IOException) {
                 throw (IOException) e;
-            else if (e instanceof RuntimeException)
+            } else if (e instanceof RuntimeException) {
                 throw (RuntimeException) e;
-            else
+            } else {
                 throw new ServletException(e.getMessage(), e);
+            }
         }
     }
 

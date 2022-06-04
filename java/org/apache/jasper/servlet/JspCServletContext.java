@@ -34,20 +34,19 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.servlet.Filter;
-import javax.servlet.FilterRegistration;
-import javax.servlet.FilterRegistration.Dynamic;
-import javax.servlet.RequestDispatcher;
-import javax.servlet.Servlet;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRegistration;
-import javax.servlet.SessionCookieConfig;
-import javax.servlet.SessionTrackingMode;
-import javax.servlet.descriptor.JspConfigDescriptor;
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterRegistration;
+import jakarta.servlet.FilterRegistration.Dynamic;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.Servlet;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRegistration;
+import jakarta.servlet.SessionCookieConfig;
+import jakarta.servlet.SessionTrackingMode;
+import jakarta.servlet.descriptor.JspConfigDescriptor;
 
 import org.apache.jasper.Constants;
 import org.apache.jasper.JasperException;
@@ -190,10 +189,7 @@ public class JspCServletContext implements ServletContext {
             throws JasperException {
         List<URL> resourceJars = new ArrayList<>();
         // Build list of potential resource JARs. Use same ordering as ContextConfig
-        Set<WebXml> resourceFragments = new LinkedHashSet<>();
-        for (WebXml fragment : orderedFragments) {
-            resourceFragments.add(fragment);
-        }
+        Set<WebXml> resourceFragments = new LinkedHashSet<>(orderedFragments);
         for (WebXml fragment : fragments) {
             if (!resourceFragments.contains(fragment)) {
                 resourceFragments.add(fragment);
@@ -343,10 +339,12 @@ public class JspCServletContext implements ServletContext {
      */
     @Override
     public String getRealPath(String path) {
-        if (!myResourceBaseURL.getProtocol().equals("file"))
+        if (!myResourceBaseURL.getProtocol().equals("file")) {
             return null;
-        if (!path.startsWith("/"))
+        }
+        if (!path.startsWith("/")) {
             return null;
+        }
         try {
             File f = new File(getResource(path).toURI());
             return f.getAbsolutePath();
@@ -448,12 +446,12 @@ public class JspCServletContext implements ServletContext {
             if (theBaseDir.isDirectory()) {
                 String theFiles[] = theBaseDir.list();
                 if (theFiles != null) {
-                    for (int i = 0; i < theFiles.length; i++) {
-                        File testFile = new File(basePath + File.separator + theFiles[i]);
+                    for (String theFile : theFiles) {
+                        File testFile = new File(basePath + File.separator + theFile);
                         if (testFile.isFile()) {
-                            thePaths.add(path + theFiles[i]);
+                            thePaths.add(path + theFile);
                         } else if (testFile.isDirectory()) {
-                            thePaths.add(path + theFiles[i] + "/");
+                            thePaths.add(path + theFile + "/");
                         }
                     }
                 }
@@ -473,7 +471,7 @@ public class JspCServletContext implements ServletContext {
                         if (entryName.startsWith(jarPath) &&
                                 entryName.length() > jarPath.length()) {
                             // Let the Set implementation handle duplicates
-                            int sep = entryName.indexOf("/", jarPath.length());
+                            int sep = entryName.indexOf('/', jarPath.length());
                             if (sep < 0) {
                                 // This is a file - strip leading "META-INF/resources"
                                 thePaths.add(entryName.substring(18));
@@ -498,21 +496,7 @@ public class JspCServletContext implements ServletContext {
      */
     @Override
     public String getServerInfo() {
-        return "JspC/ApacheTomcat9";
-    }
-
-
-    /**
-     * Return a null reference for the specified servlet name.
-     *
-     * @param name Name of the requested servlet
-     *
-     * @deprecated This method has been deprecated with no replacement
-     */
-    @Override
-    @Deprecated
-    public Servlet getServlet(String name) throws ServletException {
-        return null;
+        return "JspC/ApacheTomcat10";
     }
 
 
@@ -526,30 +510,6 @@ public class JspCServletContext implements ServletContext {
 
 
     /**
-     * Return an empty enumeration of servlet names.
-     *
-     * @deprecated This method has been deprecated with no replacement
-     */
-    @Override
-    @Deprecated
-    public Enumeration<String> getServletNames() {
-        return new Vector<String>().elements();
-    }
-
-
-    /**
-     * Return an empty enumeration of servlets.
-     *
-     * @deprecated This method has been deprecated with no replacement
-     */
-    @Override
-    @Deprecated
-    public Enumeration<Servlet> getServlets() {
-        return new Vector<Servlet>().elements();
-    }
-
-
-    /**
      * Log the specified message.
      *
      * @param message The message to be logged
@@ -557,21 +517,6 @@ public class JspCServletContext implements ServletContext {
     @Override
     public void log(String message) {
         myLogWriter.println(message);
-    }
-
-
-    /**
-     * Log the specified message and exception.
-     *
-     * @param exception The exception to be logged
-     * @param message The message to be logged
-     *
-     * @deprecated Use log(String,Throwable) instead
-     */
-    @Override
-    @Deprecated
-    public void log(Exception exception, String message) {
-        log(message, exception);
     }
 
 
@@ -678,7 +623,7 @@ public class JspCServletContext implements ServletContext {
 
 
     @Override
-    public javax.servlet.ServletRegistration.Dynamic addJspFile(String jspName, String jspFile) {
+    public jakarta.servlet.ServletRegistration.Dynamic addJspFile(String jspName, String jspFile) {
         return null;
     }
 

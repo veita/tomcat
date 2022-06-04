@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.catalina;
 
 import org.apache.catalina.connector.Request;
@@ -76,27 +75,28 @@ public interface AccessLog {
      * @param request   Request (associated with the response) to log
      * @param response  Response (associated with the request) to log
      * @param time      Time taken to process the request/response in
-     *                  milliseconds (use 0 if not known)
+     *                  nanoseconds (use 0 if not known); in Tomcat
+     *                  versions prior to 10, the time unit was
+     *                  milliseconds
      */
     public void log(Request request, Response response, long time);
 
     /**
-     * Should this valve set request attributes for IP address, hostname,
-     * protocol and port used for the request? This are typically used in
-     * conjunction with the {@link org.apache.catalina.valves.AccessLogValve}
-     * which will otherwise log the original values.
+     * Should this valve use request attributes for IP address, hostname,
+     * protocol and port used for the request?
      *
-     * The attributes set are:
+     * The attributes used are:
      * <ul>
      * <li>org.apache.catalina.RemoteAddr</li>
      * <li>org.apache.catalina.RemoteHost</li>
      * <li>org.apache.catalina.Protocol</li>
+     * <li>org.apache.catalina.ServerName</li>
      * <li>org.apache.catalina.ServerPost</li>
      * </ul>
      *
      * @param requestAttributesEnabled  <code>true</code> causes the attributes
-     *                                  to be set, <code>false</code> disables
-     *                                  the setting of the attributes.
+     *                                  to be used, <code>false</code> causes
+     *                                  the original values to be used.
      */
     public void setRequestAttributesEnabled(boolean requestAttributesEnabled);
 

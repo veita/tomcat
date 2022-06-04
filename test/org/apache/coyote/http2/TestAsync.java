@@ -27,12 +27,12 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.servlet.AsyncContext;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.WriteListener;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.AsyncContext;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.WriteListener;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -188,14 +188,7 @@ public class TestAsync extends Http2TestBase {
         }
 
         while (!output.getTrace().endsWith("3-EndOfStream\n")) {
-            try {
-                parser.readFrame(true);
-            } catch (IOException ioe) {
-                // Attempt to debug intermittent test failures
-                System.out.println(output.getTrace());
-                System.out.println(output.getBytesRead());
-                throw ioe;
-            }
+            parser.readFrame(true);
         }
 
         // Check that the right number of bytes were received

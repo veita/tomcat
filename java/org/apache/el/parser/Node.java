@@ -16,12 +16,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.el.parser;
 
-import javax.el.ELException;
-import javax.el.MethodInfo;
-import javax.el.ValueReference;
+import jakarta.el.ELException;
+import jakarta.el.MethodInfo;
+import jakarta.el.MethodReference;
+import jakarta.el.ValueReference;
 
 import org.apache.el.lang.EvaluationContext;
 
@@ -81,4 +81,9 @@ public interface Node {
    * @since EL 2.2
    */
   public boolean isParametersProvided();
+
+  /**
+   * @since EL 5.0
+   */
+  public MethodReference getMethodReference(EvaluationContext ctx);
 }

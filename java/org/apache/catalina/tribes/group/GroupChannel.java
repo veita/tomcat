@@ -201,11 +201,15 @@ public class GroupChannel extends ChannelInterceptorBase
         super.heartbeat();
 
         for (MembershipListener listener : membershipListeners) {
-            if ( listener instanceof Heartbeat ) ((Heartbeat)listener).heartbeat();
+            if ( listener instanceof Heartbeat ) {
+                ((Heartbeat)listener).heartbeat();
+            }
         }
 
         for (ChannelListener listener : channelListeners) {
-            if ( listener instanceof Heartbeat ) ((Heartbeat)listener).heartbeat();
+            if ( listener instanceof Heartbeat ) {
+                ((Heartbeat)listener).heartbeat();
+            }
         }
     }
 
@@ -244,7 +248,9 @@ public class GroupChannel extends ChannelInterceptorBase
     @Override
     public UniqueId send(Member[] destination, Serializable msg, int options, ErrorHandler handler)
             throws ChannelException {
-        if ( msg == null ) throw new ChannelException(sm.getString("groupChannel.nullMessage"));
+        if ( msg == null ) {
+            throw new ChannelException(sm.getString("groupChannel.nullMessage"));
+        }
         XByteBuffer buffer = null;
         try {
             if (destination == null || destination.length == 0) {
@@ -284,7 +290,9 @@ public class GroupChannel extends ChannelInterceptorBase
         } catch (RuntimeException | IOException e) {
             throw new ChannelException(e);
         } finally {
-            if ( buffer != null ) BufferPool.getBufferPool().returnBuffer(buffer);
+            if ( buffer != null ) {
+                BufferPool.getBufferPool().returnBuffer(buffer);
+            }
         }
     }
 
@@ -300,7 +308,9 @@ public class GroupChannel extends ChannelInterceptorBase
      */
     @Override
     public void messageReceived(ChannelMessage msg) {
-        if ( msg == null ) return;
+        if ( msg == null ) {
+            return;
+        }
         try {
             if ( Logs.MESSAGES.isTraceEnabled() ) {
                 Logs.MESSAGES.trace("GroupChannel - Received msg:" +
@@ -330,14 +340,15 @@ public class GroupChannel extends ChannelInterceptorBase
             Member source = msg.getAddress();
             boolean rx = false;
             boolean delivered = false;
-            for ( int i=0; i<channelListeners.size(); i++ ) {
-                ChannelListener channelListener = channelListeners.get(i);
+            for (ChannelListener channelListener : channelListeners) {
                 if (channelListener != null && channelListener.accept(fwd, source)) {
                     channelListener.messageReceived(fwd, source);
                     delivered = true;
                     //if the message was accepted by an RPC channel, that channel
                     //is responsible for returning the reply, otherwise we send an absence reply
-                    if ( channelListener instanceof RpcChannel ) rx = true;
+                    if (channelListener instanceof RpcChannel) {
+                        rx = true;
+                    }
                 }
             }//for
             if ((!rx) && (fwd instanceof RpcMessage)) {
@@ -353,7 +364,9 @@ public class GroupChannel extends ChannelInterceptorBase
         } catch ( Exception x ) {
             //this could be the channel listener throwing an exception, we should log it
             //as a warning.
-            if ( log.isWarnEnabled() ) log.warn(sm.getString("groupChannel.receiving.error"),x);
+            if ( log.isWarnEnabled() ) {
+                log.warn(sm.getString("groupChannel.receiving.error"),x);
+            }
             throw new RemoteProcessException(sm.getString("groupChannel.receiving.error"),x);
         }
     }
@@ -368,7 +381,9 @@ public class GroupChannel extends ChannelInterceptorBase
     protected void sendNoRpcChannelReply(RpcMessage msg, Member destination) {
         try {
             //avoid circular loop
-            if ( msg instanceof RpcMessage.NoRpcChannelReply) return;
+            if ( msg instanceof RpcMessage.NoRpcChannelReply) {
+                return;
+            }
             RpcMessage.NoRpcChannelReply reply =
                     new RpcMessage.NoRpcChannelReply(msg.rpcId, msg.uuid);
             send(new Member[]{destination},reply,Channel.SEND_OPTIONS_ASYNCHRONOUS);
@@ -385,9 +400,10 @@ public class GroupChannel extends ChannelInterceptorBase
     @Override
     public void memberAdded(Member member) {
         //notify upwards
-        for (int i=0; i<membershipListeners.size(); i++ ) {
-            MembershipListener membershipListener = membershipListeners.get(i);
-            if (membershipListener != null) membershipListener.memberAdded(member);
+        for (MembershipListener membershipListener : membershipListeners) {
+            if (membershipListener != null) {
+                membershipListener.memberAdded(member);
+            }
         }
     }
 
@@ -399,9 +415,10 @@ public class GroupChannel extends ChannelInterceptorBase
     @Override
     public void memberDisappeared(Member member) {
         //notify upwards
-        for (int i=0; i<membershipListeners.size(); i++ ) {
-            MembershipListener membershipListener = membershipListeners.get(i);
-            if (membershipListener != null) membershipListener.memberDisappeared(member);
+        for (MembershipListener membershipListener : membershipListeners) {
+            if (membershipListener != null) {
+                membershipListener.memberDisappeared(member);
+            }
         }
     }
 
@@ -438,13 +455,13 @@ public class GroupChannel extends ChannelInterceptorBase
                 while ( next != null ) {
                     int nflag = next.getOptionFlag();
                     if (nflag!=0 && (((flag & nflag) == flag ) || ((flag & nflag) == nflag)) ) {
-                        conflicts.append("[");
+                        conflicts.append('[');
                         conflicts.append(first.getClass().getName());
-                        conflicts.append(":");
+                        conflicts.append(':');
                         conflicts.append(flag);
                         conflicts.append(" == ");
                         conflicts.append(next.getClass().getName());
-                        conflicts.append(":");
+                        conflicts.append(':');
                         conflicts.append(nflag);
                         conflicts.append("] ");
                     }//end if
@@ -453,8 +470,10 @@ public class GroupChannel extends ChannelInterceptorBase
             }//end if
             first = first.getNext();
         }//while
-        if ( conflicts.length() > 0 ) throw new ChannelException(sm.getString("groupChannel.optionFlag.conflict",
-                conflicts.toString()));
+        if ( conflicts.length() > 0 ) {
+            throw new ChannelException(sm.getString("groupChannel.optionFlag.conflict",
+                    conflicts.toString()));
+        }
 
     }
 
@@ -469,23 +488,21 @@ public class GroupChannel extends ChannelInterceptorBase
     @Override
     public synchronized void start(int svc) throws ChannelException {
         setupDefaultStack();
-        if (optionCheck) checkOptionFlags();
+        if (optionCheck) {
+            checkOptionFlags();
+        }
         // register jmx
         JmxRegistry jmxRegistry = JmxRegistry.getRegistry(this);
-        if (jmxRegistry != null) this.oname = jmxRegistry.registerJmx(",component=Channel", this);
+        if (jmxRegistry != null) {
+            this.oname = jmxRegistry.registerJmx(",component=Channel", this);
+        }
         if (utilityExecutor == null) {
             log.warn(sm.getString("groupChannel.warn.noUtilityExecutor"));
             utilityExecutor = new ScheduledThreadPoolExecutor(1);
             ownExecutor = true;
         }
         super.start(svc);
-        monitorFuture = utilityExecutor.scheduleWithFixedDelay(
-                new Runnable() {
-                    @Override
-                    public void run() {
-                        startHeartbeat();
-                    }
-                }, 0, 60, TimeUnit.SECONDS);
+        monitorFuture = utilityExecutor.scheduleWithFixedDelay(this::startHeartbeat, 0, 60, TimeUnit.SECONDS);
     }
 
     protected void startHeartbeat() {
@@ -536,8 +553,11 @@ public class GroupChannel extends ChannelInterceptorBase
      * @return ChannelInterceptor
      */
     public ChannelInterceptor getFirstInterceptor() {
-        if (interceptors != null) return interceptors;
-        else return coordinator;
+        if (interceptors != null) {
+            return interceptors;
+        } else {
+            return coordinator;
+        }
     }
 
     @Override
@@ -611,8 +631,9 @@ public class GroupChannel extends ChannelInterceptorBase
      */
     @Override
     public void addMembershipListener(MembershipListener membershipListener) {
-        if (!this.membershipListeners.contains(membershipListener) )
+        if (!this.membershipListeners.contains(membershipListener) ) {
             this.membershipListeners.add(membershipListener);
+        }
     }
 
     /**

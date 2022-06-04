@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.catalina.tribes.membership.cloud;
 
 import java.io.IOException;
@@ -38,6 +37,10 @@ import org.apache.juli.logging.Log;
 import org.apache.juli.logging.LogFactory;
 import org.apache.tomcat.util.json.JSONParser;
 
+/**
+ * A {@link org.apache.catalina.tribes.MembershipProvider} that uses Kubernetes API to retrieve the members of a cluster.<br>
+ *
+ */
 
 public class KubernetesMembershipProvider extends CloudMembershipProvider {
     private static final Log log = LogFactory.getLog(KubernetesMembershipProvider.class);
@@ -57,12 +60,12 @@ public class KubernetesMembershipProvider extends CloudMembershipProvider {
             log.debug(String.format("Namespace [%s] set; clustering enabled", namespace));
         }
 
-        String protocol = getEnv("KUBERNETES_MASTER_PROTOCOL", CUSTOM_ENV_PREFIX + "MASTER_PROTOCOL");
-        String masterHost = getEnv("KUBERNETES_SERVICE_HOST", CUSTOM_ENV_PREFIX + "MASTER_HOST");
-        String masterPort = getEnv("KUBERNETES_SERVICE_PORT", CUSTOM_ENV_PREFIX + "MASTER_PORT");
+        String protocol = getEnv(CUSTOM_ENV_PREFIX + "MASTER_PROTOCOL", "KUBERNETES_MASTER_PROTOCOL");
+        String masterHost = getEnv(CUSTOM_ENV_PREFIX + "MASTER_HOST", "KUBERNETES_SERVICE_HOST");
+        String masterPort = getEnv(CUSTOM_ENV_PREFIX + "MASTER_PORT", "KUBERNETES_SERVICE_PORT");
 
-        String clientCertificateFile = getEnv("KUBERNETES_CLIENT_CERTIFICATE_FILE", CUSTOM_ENV_PREFIX + "CLIENT_CERT_FILE");
-        String caCertFile = getEnv("KUBERNETES_CA_CERTIFICATE_FILE", CUSTOM_ENV_PREFIX + "CA_CERT_FILE");
+        String clientCertificateFile = getEnv(CUSTOM_ENV_PREFIX + "CLIENT_CERT_FILE", "KUBERNETES_CLIENT_CERTIFICATE_FILE");
+        String caCertFile = getEnv(CUSTOM_ENV_PREFIX + "CA_CERT_FILE", "KUBERNETES_CA_CERTIFICATE_FILE");
         if (caCertFile == null) {
             caCertFile = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt";
         }
@@ -71,7 +74,7 @@ public class KubernetesMembershipProvider extends CloudMembershipProvider {
             if (protocol == null) {
                 protocol = "https";
             }
-            String saTokenFile = getEnv("SA_TOKEN_FILE", CUSTOM_ENV_PREFIX + "SA_TOKEN_FILE");
+            String saTokenFile = getEnv(CUSTOM_ENV_PREFIX + "SA_TOKEN_FILE", "SA_TOKEN_FILE");
             if (saTokenFile == null) {
                 saTokenFile = "/var/run/secrets/kubernetes.io/serviceaccount/token";
             }
@@ -94,11 +97,12 @@ public class KubernetesMembershipProvider extends CloudMembershipProvider {
             streamProvider = new CertificateStreamProvider(clientCertificateFile, clientKeyFile, clientKeyPassword, clientKeyAlgo, caCertFile);
         }
 
-        String ver = getEnv("KUBERNETES_API_VERSION", CUSTOM_ENV_PREFIX + "API_VERSION");
-        if (ver == null)
+        String ver = getEnv(CUSTOM_ENV_PREFIX + "API_VERSION", "KUBERNETES_API_VERSION");
+        if (ver == null) {
             ver = "v1";
+        }
 
-        String labels = getEnv("KUBERNETES_LABELS", CUSTOM_ENV_PREFIX + "LABELS");
+        String labels = getEnv(CUSTOM_ENV_PREFIX + "LABELS", "KUBERNETES_LABELS");
 
         namespace = URLEncoder.encode(namespace, "UTF-8");
         labels = labels == null ? null : URLEncoder.encode(labels, "UTF-8");
@@ -152,7 +156,7 @@ public class KubernetesMembershipProvider extends CloudMembershipProvider {
             List<Object> items = (List<Object>) itemsObject;
             for (Object podObject : items) {
                 if (!(podObject instanceof LinkedHashMap<?, ?>)) {
-                    log.warn(sm.getString("kubernetesMembershipProvider.invalidPod"));
+                    log.warn(sm.getString("kubernetesMembershipProvider.invalidPod", "item"));
                     continue;
                 }
                 LinkedHashMap<String, Object> pod = (LinkedHashMap<String, Object>) podObject;
@@ -164,26 +168,26 @@ public class KubernetesMembershipProvider extends CloudMembershipProvider {
                 // "metadata" contains "name", "uid" and "creationTimestamp"
                 Object metadataObject = pod.get("metadata");
                 if (!(metadataObject instanceof LinkedHashMap<?, ?>)) {
-                    log.warn(sm.getString("kubernetesMembershipProvider.invalidPod"));
+                    log.warn(sm.getString("kubernetesMembershipProvider.invalidPod", "metadata"));
                     continue;
                 }
                 LinkedHashMap<String, Object> metadata = (LinkedHashMap<String, Object>) metadataObject;
                 Object nameObject = metadata.get("name");
                 if (nameObject == null) {
-                    log.warn(sm.getString("kubernetesMembershipProvider.invalidPod"));
+                    log.warn(sm.getString("kubernetesMembershipProvider.invalidPod", "name"));
                     continue;
                 }
                 Object objectUid = metadata.get("uid");
                 Object creationTimestampObject = metadata.get("creationTimestamp");
                 if (creationTimestampObject == null) {
-                    log.warn(sm.getString("kubernetesMembershipProvider.invalidPod"));
+                    log.warn(sm.getString("kubernetesMembershipProvider.invalidPod", "uid"));
                     continue;
                 }
                 String creationTimestamp = creationTimestampObject.toString();
                 // "status" contains "phase" (which must be "Running") and "podIP"
                 Object statusObject = pod.get("status");
                 if (!(statusObject instanceof LinkedHashMap<?, ?>)) {
-                    log.warn(sm.getString("kubernetesMembershipProvider.invalidPod"));
+                    log.warn(sm.getString("kubernetesMembershipProvider.invalidPod", "status"));
                     continue;
                 }
                 LinkedHashMap<String, Object> status = (LinkedHashMap<String, Object>) statusObject;
@@ -192,7 +196,7 @@ public class KubernetesMembershipProvider extends CloudMembershipProvider {
                 }
                 Object podIPObject = status.get("podIP");
                 if (podIPObject == null) {
-                    log.warn(sm.getString("kubernetesMembershipProvider.invalidPod"));
+                    log.warn(sm.getString("kubernetesMembershipProvider.invalidPod", "podIP"));
                     continue;
                 }
                 String podIP = podIPObject.toString();

@@ -16,6 +16,8 @@
  */
 package org.apache.catalina.valves.rewrite;
 
+import org.apache.tomcat.util.res.StringManager;
+
 /**
  * Interface for user defined lookup/replacement logic that can be defined in
  * a {@code rewrite.config} file by a {@code RewriteMap} directive. Such a map
@@ -42,6 +44,25 @@ public interface RewriteMap {
      * @return value is currently ignored
      */
     public String setParameters(String params);
+
+    /**
+     * Optional parameters that can be defined through the {@code RewriteMap}
+     * directive in the {@code rewrite.config} file.
+     * <p>
+     * This method will be called, if there are more than one parameters defined.
+     *
+     * @param params the optional parameters
+     */
+    default void setParameters(String... params) {
+        if (params == null) {
+            return;
+        }
+        if (params.length > 1) {
+            throw new IllegalArgumentException(
+                    StringManager.getManager(RewriteMap.class).getString("rewriteMap.tooManyParameters"));
+        }
+        setParameters(params[0]);
+    }
 
     /**
      * Maps a key to a replacement value.<br>

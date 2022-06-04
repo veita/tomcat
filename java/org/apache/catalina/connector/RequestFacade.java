@@ -25,22 +25,23 @@ import java.util.Enumeration;
 import java.util.Locale;
 import java.util.Map;
 
-import javax.servlet.AsyncContext;
-import javax.servlet.DispatcherType;
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.ServletInputStream;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletMapping;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
-import javax.servlet.http.HttpUpgradeHandler;
-import javax.servlet.http.Part;
-import javax.servlet.http.PushBuilder;
+import jakarta.servlet.AsyncContext;
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletConnection;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletMapping;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpUpgradeHandler;
+import jakarta.servlet.http.Part;
+import jakarta.servlet.http.PushBuilder;
 
 import org.apache.catalina.Globals;
 import org.apache.catalina.security.SecurityUtil;
@@ -53,7 +54,6 @@ import org.apache.tomcat.util.res.StringManager;
  * @author Craig R. McClanahan
  * @author Remy Maucherat
  */
-@SuppressWarnings("deprecation")
 public class RequestFacade implements HttpServletRequest {
 
 
@@ -616,18 +616,6 @@ public class RequestFacade implements HttpServletRequest {
     }
 
     @Override
-    public String getRealPath(String path) {
-
-        if (request == null) {
-            throw new IllegalStateException(
-                            sm.getString("requestFacade.nullRequest"));
-        }
-
-        return request.getRealPath(path);
-    }
-
-
-    @Override
     public String getAuthType() {
 
         if (request == null) {
@@ -968,18 +956,6 @@ public class RequestFacade implements HttpServletRequest {
 
 
     @Override
-    public boolean isRequestedSessionIdFromUrl() {
-
-        if (request == null) {
-            throw new IllegalStateException(
-                            sm.getString("requestFacade.nullRequest"));
-        }
-
-        return request.isRequestedSessionIdFromURL();
-    }
-
-
-    @Override
     public String getLocalAddr() {
 
         if (request == null) {
@@ -1144,5 +1120,23 @@ public class RequestFacade implements HttpServletRequest {
     @Override
     public Map<String, String> getTrailerFields() {
         return request.getTrailerFields();
+    }
+
+
+    @Override
+    public String getRequestId() {
+        return request.getRequestId();
+    }
+
+
+    @Override
+    public String getProtocolRequestId() {
+        return request.getProtocolRequestId();
+    }
+
+
+    @Override
+    public ServletConnection getServletConnection() {
+        return request.getServletConnection();
     }
 }

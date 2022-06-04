@@ -22,12 +22,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.servlet.ReadListener;
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletException;
-import javax.servlet.SessionTrackingMode;
-import javax.servlet.WriteListener;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ReadListener;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.SessionTrackingMode;
+import jakarta.servlet.WriteListener;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.apache.catalina.Authenticator;
 import org.apache.catalina.Context;
@@ -46,6 +46,7 @@ import org.apache.tomcat.util.ExceptionUtils;
 import org.apache.tomcat.util.buf.B2CConverter;
 import org.apache.tomcat.util.buf.ByteChunk;
 import org.apache.tomcat.util.buf.CharChunk;
+import org.apache.tomcat.util.buf.HexUtils;
 import org.apache.tomcat.util.buf.MessageBytes;
 import org.apache.tomcat.util.http.ServerCookie;
 import org.apache.tomcat.util.http.ServerCookies;
@@ -67,7 +68,7 @@ public class CoyoteAdapter implements Adapter {
 
     // -------------------------------------------------------------- Constants
 
-    private static final String POWERED_BY = "Servlet/4.0 JSP/2.3 " +
+    private static final String POWERED_BY = "Servlet/6.0 JSP/3.1 " +
             "(" + ServerInfo.getServerInfo() + " Java/" +
             System.getProperty("java.vm.vendor") + "/" +
             System.getProperty("java.runtime.version") + ")";
@@ -78,19 +79,8 @@ public class CoyoteAdapter implements Adapter {
     public static final int ADAPTER_NOTES = 1;
 
 
-    protected static final boolean ALLOW_BACKSLASH =
-        Boolean.parseBoolean(System.getProperty("org.apache.catalina.connector.CoyoteAdapter.ALLOW_BACKSLASH", "false"));
-
-
     private static final ThreadLocal<String> THREAD_NAME =
-            new ThreadLocal<String>() {
-
-                @Override
-                protected String initialValue() {
-                    return Thread.currentThread().getName();
-                }
-
-    };
+            ThreadLocal.withInitial(() -> Thread.currentThread().getName());
 
     // ----------------------------------------------------------- Constructors
 
@@ -140,6 +130,7 @@ public class CoyoteAdapter implements Adapter {
         AsyncContextImpl asyncConImpl = request.getAsyncContextInternal();
 
         req.getRequestProcessor().setWorkerThreadName(THREAD_NAME.get());
+        req.setRequestThread();
 
         try {
             if (!request.isAsync()) {
@@ -159,21 +150,20 @@ public class CoyoteAdapter implements Adapter {
                 // trigger a close
                 success = false;
                 Throwable t = (Throwable)req.getAttribute(RequestDispatcher.ERROR_EXCEPTION);
-                req.getAttributes().remove(RequestDispatcher.ERROR_EXCEPTION);
+                Context context = request.getContext();
                 ClassLoader oldCL = null;
                 try {
-                    oldCL = request.getContext().bind(false, null);
+                    oldCL = context.bind(false, null);
                     if (req.getReadListener() != null) {
                         req.getReadListener().onError(t);
                     }
                     if (res.getWriteListener() != null) {
                         res.getWriteListener().onError(t);
                     }
-                } finally {
-                    request.getContext().unbind(false, oldCL);
-                }
-                if (t != null) {
+                    res.action(ActionCode.CLOSE_NOW, t);
                     asyncConImpl.setErrorState(t, true);
+                } finally {
+                    context.unbind(false, oldCL);
                 }
             }
 
@@ -182,42 +172,64 @@ public class CoyoteAdapter implements Adapter {
                 WriteListener writeListener = res.getWriteListener();
                 ReadListener readListener = req.getReadListener();
                 if (writeListener != null && status == SocketEvent.OPEN_WRITE) {
+                    Context context = request.getContext();
                     ClassLoader oldCL = null;
                     try {
-                        oldCL = request.getContext().bind(false, null);
+                        oldCL = context.bind(false, null);
                         res.onWritePossible();
                         if (request.isFinished() && req.sendAllDataReadEvent() &&
                                 readListener != null) {
                             readListener.onAllDataRead();
                         }
+                        // User code may have swallowed an IOException
+                        if (response.getCoyoteResponse().isExceptionPresent()) {
+                            throw response.getCoyoteResponse().getErrorException();
+                        }
                     } catch (Throwable t) {
                         ExceptionUtils.handleThrowable(t);
+                        // Need to trigger the call to AbstractProcessor.setErrorState()
+                        // before the listener is called so the listener can call complete
+                        // Therefore no need to set success=false as that would trigger a
+                        // second call to AbstractProcessor.setErrorState()
+                        // https://bz.apache.org/bugzilla/show_bug.cgi?id=65001
                         writeListener.onError(t);
-                        success = false;
+                        res.action(ActionCode.CLOSE_NOW, t);
+                        asyncConImpl.setErrorState(t, true);
                     } finally {
-                        request.getContext().unbind(false, oldCL);
+                        context.unbind(false, oldCL);
                     }
                 } else if (readListener != null && status == SocketEvent.OPEN_READ) {
+                    Context context = request.getContext();
                     ClassLoader oldCL = null;
                     try {
-                        oldCL = request.getContext().bind(false, null);
+                        oldCL = context.bind(false, null);
                         // If data is being read on a non-container thread a
                         // dispatch with status OPEN_READ will be used to get
                         // execution back on a container thread for the
                         // onAllDataRead() event. Therefore, make sure
                         // onDataAvailable() is not called in this case.
                         if (!request.isFinished()) {
-                            readListener.onDataAvailable();
+                            req.onDataAvailable();
                         }
                         if (request.isFinished() && req.sendAllDataReadEvent()) {
                             readListener.onAllDataRead();
                         }
+                        // User code may have swallowed an IOException
+                        if (request.getCoyoteRequest().isExceptionPresent()) {
+                            throw request.getCoyoteRequest().getErrorException();
+                        }
                     } catch (Throwable t) {
                         ExceptionUtils.handleThrowable(t);
+                        // Need to trigger the call to AbstractProcessor.setErrorState()
+                        // before the listener is called so the listener can call complete
+                        // Therefore no need to set success=false as that would trigger a
+                        // second call to AbstractProcessor.setErrorState()
+                        // https://bz.apache.org/bugzilla/show_bug.cgi?id=65001
                         readListener.onError(t);
-                        success = false;
+                        res.action(ActionCode.CLOSE_NOW, t);
+                        asyncConImpl.setErrorState(t, true);
                     } finally {
-                        request.getContext().unbind(false, oldCL);
+                        context.unbind(false, oldCL);
                     }
                 }
             }
@@ -273,8 +285,8 @@ public class CoyoteAdapter implements Adapter {
             // Access logging
             if (!success || !request.isAsync()) {
                 long time = 0;
-                if (req.getStartTime() != -1) {
-                    time = System.currentTimeMillis() - req.getStartTime();
+                if (req.getStartTimeNanos() != -1) {
+                    time = System.nanoTime() - req.getStartTimeNanos();
                 }
                 Context context = request.getContext();
                 if (context != null) {
@@ -285,6 +297,7 @@ public class CoyoteAdapter implements Adapter {
             }
 
             req.getRequestProcessor().setWorkerThreadName(null);
+            req.clearRequestThread();
             // Recycle the wrapper request and response
             if (!success || !request.isAsync()) {
                 updateWrapperErrorCount(request, response);
@@ -330,6 +343,7 @@ public class CoyoteAdapter implements Adapter {
         boolean postParseSuccess = false;
 
         req.getRequestProcessor().setWorkerThreadName(THREAD_NAME.get());
+        req.setRequestThread();
 
         try {
             // Parse and set Catalina and configuration specific
@@ -402,7 +416,7 @@ public class CoyoteAdapter implements Adapter {
                 // The other possibility is that an error occurred early in
                 // processing and the request could not be mapped to a Context.
                 // Log via the host or engine in that case.
-                long time = System.currentTimeMillis() - req.getStartTime();
+                long time = System.nanoTime() - req.getStartTimeNanos();
                 if (context != null) {
                     context.logAccess(request, response, time, false);
                 } else if (response.isError()) {
@@ -416,6 +430,7 @@ public class CoyoteAdapter implements Adapter {
             }
 
             req.getRequestProcessor().setWorkerThreadName(null);
+            req.clearRequestThread();
 
             // Recycle the wrapper request and response
             if (!async) {
@@ -621,29 +636,32 @@ public class CoyoteAdapter implements Adapter {
         MessageBytes decodedURI = req.decodedURI();
 
         if (undecodedURI.getType() == MessageBytes.T_BYTES) {
+            if (connector.getRejectSuspiciousURIs()) {
+                if (checkSuspiciousURIs(undecodedURI.getByteChunk())) {
+                    response.sendError(400, "Invalid URI");
+                }
+            }
+
             // Copy the raw URI to the decodedURI
             decodedURI.duplicate(undecodedURI);
 
-            // Parse the path parameters. This will:
-            //   - strip out the path parameters
-            //   - convert the decodedURI to bytes
+            // Parse (and strip out) the path parameters
             parsePathParameters(req, request);
 
             // URI decoding
             // %xx decoding of the URL
             try {
-                req.getURLDecoder().convert(decodedURI, false);
+                req.getURLDecoder().convert(decodedURI.getByteChunk(), connector.getEncodedSolidusHandlingInternal());
             } catch (IOException ioe) {
                 response.sendError(400, "Invalid URI: " + ioe.getMessage());
             }
             // Normalization
-            if (normalize(req.decodedURI())) {
+            if (normalize(req.decodedURI(), connector.getAllowBackslash())) {
                 // Character decoding
                 convertURI(decodedURI, request);
-                // Check that the URI is still normalized
-                if (!checkNormalize(req.decodedURI())) {
-                    response.sendError(400, "Invalid URI");
-                }
+                // URIEncoding values are limited to US-ASCII supersets.
+                // Therefore it is not necessary to check that the URI remains
+                // normalized after character decoding
             } else {
                 response.sendError(400, "Invalid URI");
             }
@@ -654,6 +672,8 @@ public class CoyoteAdapter implements Adapter {
              *   non-normalized URI
              * - req.decodedURI() has been set to the decoded, normalized form
              *   of req.requestURI()
+             * - 'suspicious' URI filtering - if required - has already been
+             *   performed
              */
             decodedURI.toChars();
             // Remove all path parameters; any needed path parameter should be set
@@ -699,11 +719,11 @@ public class CoyoteAdapter implements Adapter {
             // because no ROOT context has been deployed or the URI was invalid
             // so no context could be mapped.
             if (request.getContext() == null) {
-                // Don't overwrite an existing error
-                if (!response.isError()) {
-                    response.sendError(404, "Not found");
-                }
                 // Allow processing to continue.
+                // If present, the rewrite Valve may rewrite this to a valid
+                // request.
+                // The StandardEngineValve will handle the case of a missing
+                // Host and the StandardHostValve the case of a missing Context.
                 // If present, the error reporting valve will provide a response
                 // body.
                 return true;
@@ -825,14 +845,14 @@ public class CoyoteAdapter implements Adapter {
             if (wrapper != null) {
                 String[] methods = wrapper.getServletMethods();
                 if (methods != null) {
-                    for (int i=0; i < methods.length; i++) {
-                        if ("TRACE".equals(methods[i])) {
+                    for (String method : methods) {
+                        if ("TRACE".equals(method)) {
                             continue;
                         }
                         if (header == null) {
-                            header = methods[i];
+                            header = method;
                         } else {
-                            header += ", " + methods[i];
+                            header += ", " + method;
                         }
                     }
                 }
@@ -904,7 +924,10 @@ public class CoyoteAdapter implements Adapter {
         req.decodedURI().toBytes();
 
         ByteChunk uriBC = req.decodedURI().getByteChunk();
-        int semicolon = uriBC.indexOf(';', 0);
+        // The first character must always be '/' so start search at position 1.
+        // If the first character is ';' the URI will be rejected at the
+        // normalization stage
+        int semicolon = uriBC.indexOf(';', 1);
         // Performance optimisation. Return as soon as it is known there are no
         // path parameters;
         if (semicolon == -1) {
@@ -1080,7 +1103,7 @@ public class CoyoteAdapter implements Adapter {
 
         B2CConverter conv = request.getURIConverter();
         if (conv == null) {
-            conv = new B2CConverter(charset, true);
+            conv = new B2CConverter(charset, false);
             request.setURIConverter(conv);
         } else {
             conv.recycle();
@@ -1130,17 +1153,19 @@ public class CoyoteAdapter implements Adapter {
      * This method normalizes "\", "//", "/./" and "/../".
      *
      * @param uriMB URI to be normalized
+     * @param allowBackslash <code>true</code> if backslash characters are allowed in URLs
      *
      * @return <code>false</code> if normalizing this URI would require going
      *         above the root, or if the URI contains a null byte, otherwise
      *         <code>true</code>
      */
-    public static boolean normalize(MessageBytes uriMB) {
+    public static boolean normalize(MessageBytes uriMB, boolean allowBackslash) {
 
         ByteChunk uriBC = uriMB.getByteChunk();
         final byte[] b = uriBC.getBytes();
         final int start = uriBC.getStart();
         int end = uriBC.getEnd();
+        boolean appendedSlash = false;
 
         // An empty URL is not acceptable
         if (start == end) {
@@ -1150,24 +1175,24 @@ public class CoyoteAdapter implements Adapter {
         int pos = 0;
         int index = 0;
 
+
+        // The URL must start with '/' (or '\' that will be replaced soon)
+        if (b[start] != (byte) '/' && b[start] != (byte) '\\') {
+            return false;
+        }
+
         // Replace '\' with '/'
         // Check for null byte
         for (pos = start; pos < end; pos++) {
             if (b[pos] == (byte) '\\') {
-                if (ALLOW_BACKSLASH) {
+                if (allowBackslash) {
                     b[pos] = (byte) '/';
                 } else {
                     return false;
                 }
-            }
-            if (b[pos] == (byte) 0) {
+            } else if (b[pos] == (byte) 0) {
                 return false;
             }
-        }
-
-        // The URL must start with '/'
-        if (b[start] != (byte) '/') {
-            return false;
         }
 
         // Replace "//" with "/"
@@ -1189,6 +1214,7 @@ public class CoyoteAdapter implements Adapter {
                     && (b[end - 3] == (byte) '/'))) {
                 b[end] = (byte) '/';
                 end++;
+                appendedSlash = true;
             }
         }
 
@@ -1233,74 +1259,14 @@ public class CoyoteAdapter implements Adapter {
             index = index2;
         }
 
-        return true;
-
-    }
-
-
-    /**
-     * Check that the URI is normalized following character decoding. This
-     * method checks for "\", 0, "//", "/./" and "/../".
-     *
-     * @param uriMB URI to be checked (should be chars)
-     *
-     * @return <code>false</code> if sequences that are supposed to be
-     *         normalized are still present in the URI, otherwise
-     *         <code>true</code>
-     */
-    public static boolean checkNormalize(MessageBytes uriMB) {
-
-        CharChunk uriCC = uriMB.getCharChunk();
-        char[] c = uriCC.getChars();
-        int start = uriCC.getStart();
-        int end = uriCC.getEnd();
-
-        int pos = 0;
-
-        // Check for '\' and 0
-        for (pos = start; pos < end; pos++) {
-            if (c[pos] == '\\') {
-                return false;
-            }
-            if (c[pos] == 0) {
-                return false;
-            }
-        }
-
-        // Check for "//"
-        for (pos = start; pos < (end - 1); pos++) {
-            if (c[pos] == '/') {
-                if (c[pos + 1] == '/') {
-                    return false;
-                }
-            }
-        }
-
-        // Check for ending with "/." or "/.."
-        if (((end - start) >= 2) && (c[end - 1] == '.')) {
-            if ((c[end - 2] == '/')
-                    || ((c[end - 2] == '.')
-                    && (c[end - 3] == '/'))) {
-                return false;
-            }
-        }
-
-        // Check for "/./"
-        if (uriCC.indexOf("/./", 0, 3, 0) >= 0) {
-            return false;
-        }
-
-        // Check for "/../"
-        if (uriCC.indexOf("/../", 0, 4, 0) >= 0) {
-            return false;
+        // If a slash was appended to help normalize "/." or "/.." then remove
+        // any trailing "/" from the result unless the result is "/".
+        if (appendedSlash && end > 1 && b[end - 1]== '/') {
+            uriBC.setEnd(end -1);
         }
 
         return true;
-
     }
-
-
-    // ------------------------------------------------------ Protected Methods
 
 
     /**
@@ -1314,5 +1280,87 @@ public class CoyoteAdapter implements Adapter {
      */
     protected static void copyBytes(byte[] b, int dest, int src, int len) {
         System.arraycopy(b, src, b, dest, len);
+    }
+
+
+    /*
+     * Examine URI segment by segment for 'suspicious' URIs.
+     */
+    private static boolean checkSuspiciousURIs(ByteChunk undecodedURI) {
+        byte[] bytes = undecodedURI.getBytes();
+        int start = undecodedURI.getStart();
+        int end = undecodedURI.getEnd();
+        int segmentStart = -1;
+        int segmentEnd = -1;
+
+        // Find first segment
+        segmentStart = undecodedURI.indexOf('/', 0);
+        if (segmentStart > -1) {
+            segmentEnd = undecodedURI.indexOf('/', segmentStart + 1);
+        }
+
+        while (segmentStart > -1) {
+            int pos = start + segmentStart + 1;
+
+            // Empty segment other than final segment with path parameters
+            if (segmentEnd > 0 && bytes[pos] == ';') {
+                return true;
+            }
+
+            // encoded dot-segments and/or dot-segments with path parameters
+            int dotCount = 0;
+            boolean encodedDot = false;
+            while (pos < end) {
+                if (bytes[pos] == '.') {
+                    dotCount++;
+                    pos++;
+                } else if (pos + 2 < end && bytes[pos] == '%' && bytes[pos + 1] == '2' && (bytes[pos+2] == 'e' || bytes[pos+2] == 'E')) {
+                    encodedDot = true;
+                    dotCount++;
+                    pos += 3;
+                } else if (bytes[pos] == ';') {
+                    if (dotCount > 0) {
+                        return true;
+                    }
+                    break;
+                } else if (bytes[pos] == '/') {
+                    break;
+                } else {
+                    dotCount = 0;
+                    break;
+                }
+            }
+            if (dotCount > 0 && encodedDot) {
+                return true;
+            }
+
+            // %nn encoded controls or '/'
+            pos = start + segmentStart + 1;
+            while (pos < end) {
+                if (pos + 2 < end && bytes[pos] == '%') {
+                    byte b1 = bytes[pos + 1];
+                    byte b2 = bytes[pos + 2];
+                    pos += 3;
+                    int decoded = (HexUtils.getDec(b1) << 4) + HexUtils.getDec(b2);
+                    if (decoded < 20 || decoded == 0x7F || decoded == 0x2F) {
+                        return true;
+                    }
+                } else {
+                    pos++;
+                }
+            }
+
+            // Move to next segment
+            if (segmentEnd == -1) {
+                segmentStart = -1;
+            } else {
+                segmentStart = segmentEnd;
+                if (segmentStart > -1) {
+                    segmentEnd = undecodedURI.indexOf('/', segmentStart + 1);
+                }
+            }
+        }
+
+        return false;
     }
 }

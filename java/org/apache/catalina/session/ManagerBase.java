@@ -88,19 +88,20 @@ public abstract class ManagerBase extends LifecycleMBeanBase implements Manager 
 
     /**
      * The name of the algorithm to use to create instances of
-     * {@link java.security.SecureRandom} which are used to generate session IDs.
-     * If no algorithm is specified, SHA1PRNG is used. To use the platform
-     * default (which may be SHA1PRNG), specify the empty string. If an invalid
+     * {@link java.security.SecureRandom} which are used to generate session
+     * IDs. If no algorithm is specified, SHA1PRNG is used. If SHA1PRNG is not
+     * available, the platform default will be used. To use the platform default
+     * (which may be SHA1PRNG), specify the empty string. If an invalid
      * algorithm and/or provider is specified the SecureRandom instances will be
      * created using the defaults. If that fails, the SecureRandom instances
      * will be created using platform defaults.
      */
-    protected String secureRandomAlgorithm = "SHA1PRNG";
+    protected String secureRandomAlgorithm = SessionIdGeneratorBase.DEFAULT_SECURE_RANDOM_ALGORITHM;
 
     /**
      * The name of the provider to use to create instances of
-     * {@link java.security.SecureRandom} which are used to generate session IDs.
-     * If no algorithm is specified the of SHA1PRNG default is used. If an
+     * {@link java.security.SecureRandom} which are used to generate session
+     * IDs. If no provider is specified the platform default is used. If an
      * invalid algorithm and/or provider is specified the SecureRandom instances
      * will be created using the defaults. If that fails, the SecureRandom
      * instances will be created using platform defaults.
@@ -197,6 +198,15 @@ public abstract class ManagerBase extends LifecycleMBeanBase implements Manager 
 
     private boolean notifyAttributeListenerOnUnchangedValue = true;
 
+    /**
+     * Determines whether sessions managed by this manager shall persist (serialize)
+     * authentication information or not.
+     */
+    private boolean persistAuthentication = false;
+
+    private boolean sessionActivityCheck = Globals.STRICT_SERVLET_COMPLIANCE;
+
+    private boolean sessionLastAccessAtStart = Globals.STRICT_SERVLET_COMPLIANCE;
 
     // ------------------------------------------------------------ Constructors
 
@@ -204,8 +214,11 @@ public abstract class ManagerBase extends LifecycleMBeanBase implements Manager 
         if (Globals.IS_SECURITY_ENABLED) {
             // Minimum set required for default distribution/persistence to work
             // plus String
+            // plus SerializablePrincipal and String[] (required for authentication persistence)
             setSessionAttributeValueClassNameFilter(
-                    "java\\.lang\\.(?:Boolean|Integer|Long|Number|String)");
+                    "java\\.lang\\.(?:Boolean|Integer|Long|Number|String)"
+                    + "|org\\.apache\\.catalina\\.realm\\.GenericPrincipal\\$SerializablePrincipal"
+                    + "|\\[Ljava.lang.String;");
             setWarnOnSessionAttributeFilterFailure(true);
         }
     }
@@ -235,6 +248,30 @@ public abstract class ManagerBase extends LifecycleMBeanBase implements Manager 
     @Override
     public void setNotifyBindingListenerOnUnchangedValue(boolean notifyBindingListenerOnUnchangedValue) {
         this.notifyBindingListenerOnUnchangedValue = notifyBindingListenerOnUnchangedValue;
+    }
+
+
+    @Override
+    public boolean getSessionActivityCheck() {
+        return sessionActivityCheck;
+    }
+
+
+    @Override
+    public void setSessionActivityCheck(boolean sessionActivityCheck) {
+        this.sessionActivityCheck = sessionActivityCheck;
+    }
+
+
+    @Override
+    public boolean getSessionLastAccessAtStart() {
+        return sessionLastAccessAtStart;
+    }
+
+
+    @Override
+    public void setSessionLastAccessAtStart(boolean sessionLastAccessAtStart) {
+        this.sessionLastAccessAtStart = sessionLastAccessAtStart;
     }
 
 
@@ -543,8 +580,32 @@ public abstract class ManagerBase extends LifecycleMBeanBase implements Manager 
                                    Integer.valueOf(this.processExpiresFrequency));
 
     }
-    // --------------------------------------------------------- Public Methods
 
+
+    /**
+     * Return whether sessions managed by this manager shall persist authentication
+     * information or not.
+     *
+     * @return {@code true}, sessions managed by this manager shall persist
+     *         authentication information; {@code false} otherwise
+     */
+    public boolean getPersistAuthentication() {
+        return this.persistAuthentication;
+    }
+
+    /**
+     * Set whether sessions managed by this manager shall persist authentication
+     * information or not.
+     *
+     * @param persistAuthentication if {@code true}, sessions managed by this manager
+     *                              shall persist authentication information
+     */
+    public void setPersistAuthentication(boolean persistAuthentication) {
+        this.persistAuthentication = persistAuthentication;
+    }
+
+
+    // --------------------------------------------------------- Public Methods
 
     /**
      * {@inheritDoc}
@@ -554,8 +615,9 @@ public abstract class ManagerBase extends LifecycleMBeanBase implements Manager 
     @Override
     public void backgroundProcess() {
         count = (count + 1) % processExpiresFrequency;
-        if (count == 0)
+        if (count == 0) {
             processExpires();
+        }
     }
 
     /**
@@ -567,16 +629,18 @@ public abstract class ManagerBase extends LifecycleMBeanBase implements Manager 
         Session sessions[] = findSessions();
         int expireHere = 0 ;
 
-        if(log.isDebugEnabled())
+        if(log.isDebugEnabled()) {
             log.debug("Start expire sessions " + getName() + " at " + timeNow + " sessioncount " + sessions.length);
-        for (int i = 0; i < sessions.length; i++) {
-            if (sessions[i]!=null && !sessions[i].isValid()) {
+        }
+        for (Session session : sessions) {
+            if (session != null && !session.isValid()) {
                 expireHere++;
             }
         }
         long timeEnd = System.currentTimeMillis();
-        if(log.isDebugEnabled())
-             log.debug("End expire sessions " + getName() + " processingTime " + (timeEnd - timeNow) + " expired sessions: " + expireHere);
+        if(log.isDebugEnabled()) {
+            log.debug("End expire sessions " + getName() + " processingTime " + (timeEnd - timeNow) + " expired sessions: " + expireHere);
+        }
         processingTime += ( timeEnd - timeNow );
 
     }
@@ -623,11 +687,13 @@ public abstract class ManagerBase extends LifecycleMBeanBase implements Manager 
             ((Lifecycle) sessionIdGenerator).start();
         } else {
             // Force initialization of the random number generator
-            if (log.isDebugEnabled())
+            if (log.isDebugEnabled()) {
                 log.debug("Force random number initialization starting");
+            }
             sessionIdGenerator.generateSessionId();
-            if (log.isDebugEnabled())
+            if (log.isDebugEnabled()) {
                 log.debug("Force random number initialization completed");
+            }
         }
     }
 
@@ -748,12 +814,6 @@ public abstract class ManagerBase extends LifecycleMBeanBase implements Manager 
     @Override
     public void removePropertyChangeListener(PropertyChangeListener listener) {
         support.removePropertyChangeListener(listener);
-    }
-
-
-    @Override
-    public void changeSessionId(Session session) {
-        rotateSessionId(session);
     }
 
 
@@ -1009,9 +1069,9 @@ public abstract class ManagerBase extends LifecycleMBeanBase implements Manager 
     @Override
     public int getSessionAverageAliveTime() {
         // Copy current stats
-        List<SessionTiming> copy = new ArrayList<>();
+        List<SessionTiming> copy;
         synchronized (sessionExpirationTiming) {
-            copy.addAll(sessionExpirationTiming);
+            copy = new ArrayList<>(sessionExpirationTiming);
         }
 
         // Init
@@ -1040,9 +1100,9 @@ public abstract class ManagerBase extends LifecycleMBeanBase implements Manager 
     @Override
     public int getSessionCreateRate() {
         // Copy current stats
-        List<SessionTiming> copy = new ArrayList<>();
+        List<SessionTiming> copy;
         synchronized (sessionCreationTiming) {
-            copy.addAll(sessionCreationTiming);
+            copy = new ArrayList<>(sessionCreationTiming);
         }
 
         return calculateRate(copy);
@@ -1060,9 +1120,9 @@ public abstract class ManagerBase extends LifecycleMBeanBase implements Manager 
     @Override
     public int getSessionExpireRate() {
         // Copy current stats
-        List<SessionTiming> copy = new ArrayList<>();
+        List<SessionTiming> copy;
         synchronized (sessionExpirationTiming) {
-            copy.addAll(sessionExpirationTiming);
+            copy = new ArrayList<>(sessionExpirationTiming);
         }
 
         return calculateRate(copy);
@@ -1105,7 +1165,7 @@ public abstract class ManagerBase extends LifecycleMBeanBase implements Manager 
     public String listSessionIds() {
         StringBuilder sb = new StringBuilder();
         for (String s : sessions.keySet()) {
-            sb.append(s).append(" ");
+            sb.append(s).append(' ');
         }
         return sb.toString();
     }
@@ -1129,7 +1189,9 @@ public abstract class ManagerBase extends LifecycleMBeanBase implements Manager 
             return null;
         }
         Object o=s.getSession().getAttribute(key);
-        if( o==null ) return null;
+        if( o==null ) {
+            return null;
+        }
         return o.toString();
     }
 

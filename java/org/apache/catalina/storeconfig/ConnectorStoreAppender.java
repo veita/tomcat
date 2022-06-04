@@ -38,8 +38,7 @@ import org.apache.tomcat.util.net.SocketProperties;
  * Store the Connector attributes. Connector has really special design. A
  * Connector is only a startup Wrapper for a ProtocolHandler. This meant that
  * ProtocolHandler get all there attributes from the Connector attribute map.
- * Strange is that some attributes change there name and the attribute
- * sslProtocol need a special handling
+ * Strange is that some attributes change their name.
  */
 public class ConnectorStoreAppender extends StoreAppender {
 
@@ -47,13 +46,7 @@ public class ConnectorStoreAppender extends StoreAppender {
     protected static final Set<String> internalExecutorAttributes = new HashSet<>();
     static {
         replacements.put("timeout", "connectionUploadTimeout");
-        replacements.put("clientauth", "clientAuth");
-        replacements.put("keystore", "keystoreFile");
         replacements.put("randomfile", "randomFile");
-        replacements.put("keypass", "keystorePass");
-        replacements.put("keytype", "keystoreType");
-        replacements.put("protocol", "sslProtocol");
-        replacements.put("protocols", "sslProtocols");
 
         internalExecutorAttributes.add("maxThreads");
         internalExecutorAttributes.add("minSpareThreads");
@@ -136,8 +129,9 @@ public class ConnectorStoreAppender extends StoreAppender {
             }
             if ("protocol".equals(descriptor.getName())
                     || "protocolHandlerClassName".equals(descriptor
-                            .getName()))
+                            .getName())) {
                 continue;
+            }
             propertyKeys.add(descriptor.getName());
         }
         // Add the properties of the protocol handler
@@ -299,8 +293,9 @@ public class ConnectorStoreAppender extends StoreAppender {
 
         File jkHomeBase;
         File file = new File(jkHome);
-        if (!file.isAbsolute())
+        if (!file.isAbsolute()) {
             file = new File(appBase, jkHome);
+        }
         try {
             jkHomeBase = file.getCanonicalFile();
         } catch (IOException e) {

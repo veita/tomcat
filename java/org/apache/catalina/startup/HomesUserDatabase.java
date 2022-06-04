@@ -14,8 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-
 package org.apache.catalina.startup;
 
 
@@ -120,18 +118,20 @@ public final class HomesUserDatabase
 
         String homeBase = userConfig.getHomeBase();
         File homeBaseDir = new File(homeBase);
-        if (!homeBaseDir.exists() || !homeBaseDir.isDirectory())
+        if (!homeBaseDir.exists() || !homeBaseDir.isDirectory()) {
             return;
+        }
         String homeBaseFiles[] = homeBaseDir.list();
         if (homeBaseFiles == null) {
             return;
         }
 
-        for (int i = 0; i < homeBaseFiles.length; i++) {
-            File homeDir = new File(homeBaseDir, homeBaseFiles[i]);
-            if (!homeDir.isDirectory() || !homeDir.canRead())
+        for (String homeBaseFile : homeBaseFiles) {
+            File homeDir = new File(homeBaseDir, homeBaseFile);
+            if (!homeDir.isDirectory() || !homeDir.canRead()) {
                 continue;
-            homes.put(homeBaseFiles[i], homeDir.toString());
+            }
+            homes.put(homeBaseFile, homeDir.toString());
         }
     }
 }

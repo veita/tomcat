@@ -20,10 +20,10 @@ import java.io.CharArrayWriter;
 import java.io.FileNotFoundException;
 import java.util.Collection;
 
-import javax.servlet.jsp.tagext.TagAttributeInfo;
-import javax.servlet.jsp.tagext.TagFileInfo;
-import javax.servlet.jsp.tagext.TagInfo;
-import javax.servlet.jsp.tagext.TagLibraryInfo;
+import jakarta.servlet.jsp.tagext.TagAttributeInfo;
+import jakarta.servlet.jsp.tagext.TagFileInfo;
+import jakarta.servlet.jsp.tagext.TagInfo;
+import jakarta.servlet.jsp.tagext.TagLibraryInfo;
 
 import org.apache.jasper.JasperException;
 import org.apache.jasper.JspCompilationContext;
@@ -76,13 +76,6 @@ class Parser implements TagConstants {
     private static final String JAVAX_BODY_CONTENT_TEMPLATE_TEXT =
         "JAVAX_BODY_CONTENT_TEMPLATE_TEXT";
 
-    /* System property that controls if the strict white space rules are
-     * applied.
-     */
-    private static final boolean STRICT_WHITESPACE = Boolean.parseBoolean(
-            System.getProperty(
-                    "org.apache.jasper.compiler.Parser.STRICT_WHITESPACE",
-                    "true"));
     /**
      * The constructor
      */
@@ -126,7 +119,8 @@ class Parser implements TagConstants {
 
         Parser parser = new Parser(pc, reader, isTagFile, directivesOnly, jar);
 
-        Node.Root root = new Node.Root(reader.mark(), parent, false);
+        Node.Root root = new Node.Root(reader.mark(), parent, false,
+                pc.getJspCompilationContext().getOptions().getTempVariableNamePrefix());
         root.setPageEncoding(pageEnc);
         root.setJspConfigPageEncoding(jspConfigPageEnc);
         root.setIsDefaultPageEncoding(isDefaultPageEncoding);
@@ -166,7 +160,7 @@ class Parser implements TagConstants {
 
         try {
             while (parseAttribute(attrs)) {
-                if (ws == 0 && STRICT_WHITESPACE) {
+                if (ws == 0 && ctxt.getOptions().getStrictWhitespace()) {
                     err.jspError(reader.mark(),
                             "jsp.error.attribute.nowhitespace");
                 }
@@ -208,8 +202,9 @@ class Parser implements TagConstants {
 
         // Get the qualified name
         String qName = parseName();
-        if (qName == null)
+        if (qName == null) {
             return false;
+        }
 
         boolean ignoreEL = pageInfo.isELIgnored();
 
@@ -228,13 +223,15 @@ class Parser implements TagConstants {
         }
 
         reader.skipSpaces();
-        if (!reader.matches("="))
+        if (!reader.matches("=")) {
             err.jspError(reader.mark(), "jsp.error.attribute.noequal");
+        }
 
         reader.skipSpaces();
         char quote = (char) reader.nextChar();
-        if (quote != '\'' && quote != '"')
+        if (quote != '\'' && quote != '"') {
             err.jspError(reader.mark(), "jsp.error.attribute.noquote");
+        }
 
         String watchString = "";
         if (reader.matches("<%=")) {
@@ -302,8 +299,9 @@ class Parser implements TagConstants {
         } catch (IllegalArgumentException iae) {
             err.jspError(start, iae.getMessage());
         }
-        if (watch.length() == 1) // quote
+        if (watch.length() == 1) {
             return ret;
+        }
 
         // Put back delimiter '<%=' and '%>', since they are needed if the
         // attribute does not allow RTexpression.
@@ -1303,8 +1301,9 @@ class Parser implements TagConstants {
      */
     private void parseTemplateText(Node parent) {
 
-        if (!reader.hasMoreInput())
+        if (!reader.hasMoreInput()) {
             return;
+        }
 
         CharArrayWriter ttext = new CharArrayWriter();
 
@@ -1742,12 +1741,12 @@ class Parser implements TagConstants {
         if (n instanceof Node.CustomTag) {
             TagInfo tagInfo = ((Node.CustomTag) n).getTagInfo();
             TagAttributeInfo[] tldAttrs = tagInfo.getAttributes();
-            for (int i = 0; i < tldAttrs.length; i++) {
-                if (name.equals(tldAttrs[i].getName())) {
-                    if (tldAttrs[i].isFragment()) {
+            for (TagAttributeInfo tldAttr : tldAttrs) {
+                if (name.equals(tldAttr.getName())) {
+                    if (tldAttr.isFragment()) {
                         return TagInfo.BODY_CONTENT_SCRIPTLESS;
                     }
-                    if (tldAttrs[i].canBeRequestTime()) {
+                    if (tldAttr.canBeRequestTime()) {
                         return TagInfo.BODY_CONTENT_JSP;
                     }
                 }

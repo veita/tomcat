@@ -17,6 +17,7 @@
 package org.apache.tomcat.util.descriptor.web;
 
 import java.io.Serializable;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -26,11 +27,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.servlet.HttpConstraintElement;
-import javax.servlet.HttpMethodConstraintElement;
-import javax.servlet.ServletSecurityElement;
-import javax.servlet.annotation.ServletSecurity;
-import javax.servlet.annotation.ServletSecurity.EmptyRoleSemantic;
+import jakarta.servlet.HttpConstraintElement;
+import jakarta.servlet.HttpMethodConstraintElement;
+import jakarta.servlet.ServletSecurityElement;
+import jakarta.servlet.annotation.ServletSecurity;
+import jakarta.servlet.annotation.ServletSecurity.EmptyRoleSemantic;
 
 import org.apache.juli.logging.Log;
 import org.apache.tomcat.util.res.StringManager;
@@ -212,8 +213,9 @@ public class SecurityConstraint extends XmlEncodingBase implements Serializable 
      */
     public void setUserConstraint(String userConstraint) {
 
-        if (userConstraint != null)
+        if (userConstraint != null) {
             this.userConstraint = userConstraint;
+        }
 
     }
 
@@ -245,8 +247,9 @@ public class SecurityConstraint extends XmlEncodingBase implements Serializable 
      */
     public void addAuthRole(String authRole) {
 
-        if (authRole == null)
+        if (authRole == null) {
             return;
+        }
 
         if (ROLE_ALL_ROLES.equals(authRole)) {
             allRoles = true;
@@ -265,6 +268,15 @@ public class SecurityConstraint extends XmlEncodingBase implements Serializable 
     }
 
 
+    @Override
+    public void setCharset(Charset charset) {
+        super.setCharset(charset);
+        for (SecurityCollection collection : collections) {
+            collection.setCharset(getCharset());
+        }
+    }
+
+
     /**
      * Add a new web resource collection to those protected by this
      * security constraint.
@@ -273,8 +285,9 @@ public class SecurityConstraint extends XmlEncodingBase implements Serializable 
      */
     public void addCollection(SecurityCollection collection) {
 
-        if (collection == null)
+        if (collection == null) {
             return;
+        }
 
         collection.setCharset(getCharset());
 
@@ -294,11 +307,13 @@ public class SecurityConstraint extends XmlEncodingBase implements Serializable 
      */
     public boolean findAuthRole(String role) {
 
-        if (role == null)
+        if (role == null) {
             return false;
-        for (int i = 0; i < authRoles.length; i++) {
-            if (role.equals(authRoles[i]))
+        }
+        for (String authRole : authRoles) {
+            if (role.equals(authRole)) {
                 return true;
+            }
         }
         return false;
 
@@ -325,11 +340,13 @@ public class SecurityConstraint extends XmlEncodingBase implements Serializable 
      * @return the collection
      */
     public SecurityCollection findCollection(String name) {
-        if (name == null)
+        if (name == null) {
             return null;
-        for (int i = 0; i < collections.length; i++) {
-            if (name.equals(collections[i].getName()))
-                return collections[i];
+        }
+        for (SecurityCollection collection : collections) {
+            if (name.equals(collection.getName())) {
+                return collection;
+            }
         }
         return null;
     }
@@ -356,17 +373,20 @@ public class SecurityConstraint extends XmlEncodingBase implements Serializable 
     public boolean included(String uri, String method) {
 
         // We cannot match without a valid request method
-        if (method == null)
+        if (method == null) {
             return false;
+        }
 
         // Check all of the collections included in this constraint
-        for (int i = 0; i < collections.length; i++) {
-            if (!collections[i].findMethod(method))
+        for (SecurityCollection collection : collections) {
+            if (!collection.findMethod(method)) {
                 continue;
-            String patterns[] = collections[i].findPatterns();
-            for (int j = 0; j < patterns.length; j++) {
-                if (matchPattern(uri, patterns[j]))
+            }
+            String patterns[] = collection.findPatterns();
+            for (String pattern : patterns) {
+                if (matchPattern(uri, pattern)) {
                     return true;
+                }
             }
         }
 
@@ -384,8 +404,9 @@ public class SecurityConstraint extends XmlEncodingBase implements Serializable 
      */
     public void removeAuthRole(String authRole) {
 
-        if (authRole == null)
+        if (authRole == null) {
             return;
+        }
 
         if (ROLE_ALL_ROLES.equals(authRole)) {
             allRoles = false;
@@ -408,8 +429,9 @@ public class SecurityConstraint extends XmlEncodingBase implements Serializable 
             int j = 0;
             String results[] = new String[authRoles.length - 1];
             for (int i = 0; i < authRoles.length; i++) {
-                if (i != n)
+                if (i != n) {
                     results[j++] = authRoles[i];
+                }
             }
             authRoles = results;
         }
@@ -424,8 +446,9 @@ public class SecurityConstraint extends XmlEncodingBase implements Serializable 
      */
     public void removeCollection(SecurityCollection collection) {
 
-        if (collection == null)
+        if (collection == null) {
             return;
+        }
         int n = -1;
         for (int i = 0; i < collections.length; i++) {
             if (collections[i].equals(collection)) {
@@ -438,8 +461,9 @@ public class SecurityConstraint extends XmlEncodingBase implements Serializable 
             SecurityCollection results[] =
                 new SecurityCollection[collections.length - 1];
             for (int i = 0; i < collections.length; i++) {
-                if (i != n)
+                if (i != n) {
                     results[j++] = collections[i];
+                }
             }
             collections = results;
         }
@@ -454,11 +478,12 @@ public class SecurityConstraint extends XmlEncodingBase implements Serializable 
     public String toString() {
         StringBuilder sb = new StringBuilder("SecurityConstraint[");
         for (int i = 0; i < collections.length; i++) {
-            if (i > 0)
+            if (i > 0) {
                 sb.append(", ");
+            }
             sb.append(collections[i].getName());
         }
-        sb.append("]");
+        sb.append(']');
         return sb.toString();
     }
 
@@ -478,28 +503,36 @@ public class SecurityConstraint extends XmlEncodingBase implements Serializable 
     private boolean matchPattern(String path, String pattern) {
 
         // Normalize the argument strings
-        if ((path == null) || (path.length() == 0))
+        if ((path == null) || (path.length() == 0)) {
             path = "/";
-        if ((pattern == null) || (pattern.length() == 0))
+        }
+        if ((pattern == null) || (pattern.length() == 0)) {
             pattern = "/";
+        }
 
         // Check for exact match
-        if (path.equals(pattern))
+        if (path.equals(pattern)) {
             return true;
+        }
 
         // Check for path prefix matching
         if (pattern.startsWith("/") && pattern.endsWith("/*")) {
             pattern = pattern.substring(0, pattern.length() - 2);
             if (pattern.length() == 0)
+             {
                 return true;  // "/*" is the same as "/"
-            if (path.endsWith("/"))
+            }
+            if (path.endsWith("/")) {
                 path = path.substring(0, path.length() - 1);
+            }
             while (true) {
-                if (pattern.equals(path))
+                if (pattern.equals(path)) {
                     return true;
+                }
                 int slash = path.lastIndexOf('/');
-                if (slash <= 0)
+                if (slash <= 0) {
                     break;
+                }
                 path = path.substring(0, slash);
             }
             return false;
@@ -517,8 +550,9 @@ public class SecurityConstraint extends XmlEncodingBase implements Serializable 
         }
 
         // Check for universal mapping
-        if (pattern.equals("/"))
+        if (pattern.equals("/")) {
             return true;
+        }
 
         return false;
 
@@ -564,7 +598,7 @@ public class SecurityConstraint extends XmlEncodingBase implements Serializable 
 
         }
 
-        return result.toArray(new SecurityConstraint[result.size()]);
+        return result.toArray(new SecurityConstraint[0]);
     }
 
     private static SecurityConstraint createConstraint(
@@ -621,9 +655,7 @@ public class SecurityConstraint extends XmlEncodingBase implements Serializable 
                 String[] omittedMethods = collection.findOmittedMethods();
                 // Simple case: no methods
                 if (methods.length == 0 && omittedMethods.length == 0) {
-                    for (String pattern : patterns) {
-                        coveredPatterns.add(pattern);
-                    }
+                    coveredPatterns.addAll(Arrays.asList(patterns));
                     continue;
                 }
 
@@ -655,9 +687,7 @@ public class SecurityConstraint extends XmlEncodingBase implements Serializable 
                                 m = new HashSet<>();
                                 urlMethodMap.put(pattern, m);
                             }
-                            for (String method : methods) {
-                                m.add(method);
-                            }
+                            m.addAll(Arrays.asList(methods));
                         }
                     }
                 }
@@ -723,7 +753,7 @@ public class SecurityConstraint extends XmlEncodingBase implements Serializable 
                     newConstraints, log);
         }
 
-        return newConstraints.toArray(new SecurityConstraint[newConstraints.size()]);
+        return newConstraints.toArray(new SecurityConstraint[0]);
     }
 
 

@@ -14,16 +14,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
-
 package jsp2.examples.simpletag;
 
 import java.io.IOException;
 import java.util.Random;
 
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.tagext.JspFragment;
-import javax.servlet.jsp.tagext.SimpleTagSupport;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.tagext.JspFragment;
+import jakarta.servlet.jsp.tagext.SimpleTagSupport;
 
 /**
  * SimpleTag handler that accepts takes three attributes of type

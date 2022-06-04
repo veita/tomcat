@@ -18,7 +18,7 @@ package cal;
 
 import java.util.Hashtable;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 public class Entries {
 
@@ -43,9 +43,11 @@ public class Entries {
     }
 
     public int getIndex(String tm) {
-        for (int i = 0; i < rows; i++)
-            if (tm.equals(time[i]))
+        for (int i = 0; i < rows; i++) {
+            if (tm.equals(time[i])) {
                 return i;
+            }
+        }
         return -1;
     }
 

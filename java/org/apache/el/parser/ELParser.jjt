@@ -25,7 +25,7 @@ options
 {
     STATIC=false;
     NODE_PREFIX="Ast";
-    VISITOR_EXCEPTION="javax.el.ELException";
+    VISITOR_EXCEPTION="jakarta.el.ELException";
     VISITOR=false;
     MULTI=true;
     NODE_DEFAULT_VOID=true;
@@ -38,7 +38,7 @@ options
 PARSER_BEGIN( ELParser )
 package org.apache.el.parser;
 import java.io.StringReader;
-import javax.el.ELException;
+import jakarta.el.ELException;
 public class ELParser {
 
     public static Node parse(String ref) throws ELException {
@@ -327,7 +327,7 @@ void NonLiteral() : {}
     | <LPAREN> Expression() <RPAREN>
     | LOOKAHEAD((<IDENTIFIER> <COLON>)? <IDENTIFIER> <LPAREN>) Function()
     | Identifier()
-    | LOOKAHEAD(3)SetData()
+    | LOOKAHEAD(5)SetData()
     | ListData()
     | MapData()
 }

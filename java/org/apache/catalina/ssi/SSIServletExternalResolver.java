@@ -22,20 +22,20 @@ import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.Locale;
 
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.apache.catalina.connector.Connector;
 import org.apache.catalina.connector.Request;
-import org.apache.coyote.Constants;
 import org.apache.tomcat.util.buf.B2CConverter;
 import org.apache.tomcat.util.buf.UDecoder;
 import org.apache.tomcat.util.http.RequestUtil;
@@ -93,8 +93,7 @@ public class SSIServletExternalResolver implements SSIExternalResolver {
 
     @Override
     public void addVariableNames(Collection<String> variableNames) {
-        for (int i = 0; i < VARIABLE_NAMES.length; i++) {
-            String variableName = VARIABLE_NAMES[i];
+        for (String variableName : VARIABLE_NAMES) {
             String variableValue = getVariableValue(variableName);
             if (variableValue != null) {
                 variableNames.add(variableName);
@@ -204,7 +203,7 @@ public class SSIServletExternalResolver implements SSIExternalResolver {
                 }
                 if (accept != null) {
                     Enumeration<String> acceptHeaders = req.getHeaders(accept);
-                    if (acceptHeaders != null)
+                    if (acceptHeaders != null) {
                         if (acceptHeaders.hasMoreElements()) {
                             StringBuilder rv = new StringBuilder(
                                     acceptHeaders.nextElement());
@@ -213,6 +212,7 @@ public class SSIServletExternalResolver implements SSIExternalResolver {
                                 rv.append(acceptHeaders.nextElement());
                             }
                         retVal = rv.toString();
+                    }
                     }
                 }
             }
@@ -225,12 +225,14 @@ public class SSIServletExternalResolver implements SSIExternalResolver {
             else if (nameParts[1].equals("REFERER")) {
                 retVal = req.getHeader("Referer");
             }
-            else if (nameParts[1].equals("USER"))
-                if (nameParts.length == 3)
+            else if (nameParts[1].equals("USER")) {
+                if (nameParts.length == 3) {
                     if (nameParts[2].equals("AGENT")) {
                         requiredParts = 3;
                         retVal = req.getHeader("User-Agent");
                     }
+                }
+            }
 
         } else if (nameParts[0].equals("PATH")) {
             if (nameParts[1].equals("INFO")) {
@@ -273,7 +275,7 @@ public class SSIServletExternalResolver implements SSIExternalResolver {
                             queryStringCharset = uriCharset;
                         } else {
                             // Use default as a last resort
-                            queryStringCharset = Constants.DEFAULT_URI_CHARSET;
+                            queryStringCharset = StandardCharsets.UTF_8;
                         }
 
                         retVal = UDecoder.URLDecode(queryString, queryStringCharset);
@@ -300,7 +302,9 @@ public class SSIServletExternalResolver implements SSIExternalResolver {
                 // If this is an error page, get the original URI
                 retVal = (String) req.getAttribute(
                         RequestDispatcher.FORWARD_REQUEST_URI);
-                if (retVal == null) retVal=req.getRequestURI();
+                if (retVal == null) {
+                    retVal=req.getRequestURI();
+                }
             }
         } else if (nameParts[0].equals("SCRIPT")) {
             String scriptName = req.getServletPath();
@@ -322,18 +326,20 @@ public class SSIServletExternalResolver implements SSIExternalResolver {
                 retVal = req.getProtocol();
             } else if (nameParts[1].equals("SOFTWARE")) {
                 StringBuilder rv = new StringBuilder(context.getServerInfo());
-                rv.append(" ");
+                rv.append(' ');
                 rv.append(System.getProperty("java.vm.name"));
-                rv.append("/");
+                rv.append('/');
                 rv.append(System.getProperty("java.vm.version"));
-                rv.append(" ");
+                rv.append(' ');
                 rv.append(System.getProperty("os.name"));
                 retVal = rv.toString();
             }
         } else if (name.equalsIgnoreCase("UNIQUE_ID")) {
             retVal = req.getRequestedSessionId();
         }
-        if (requiredParts != nameParts.length) return null;
+        if (requiredParts != nameParts.length) {
+            return null;
+        }
             return retVal;
     }
 

@@ -14,8 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-
 package org.apache.catalina.core;
 
 
@@ -23,16 +21,16 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletRequestWrapper;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletRequestWrapper;
 
 
 /**
- * Wrapper around a <code>javax.servlet.ServletRequest</code>
+ * Wrapper around a <code>jakarta.servlet.ServletRequest</code>
  * that transforms an application request object (which might be the original
  * one passed to a servlet, or might be based on the 2.3
- * <code>javax.servlet.ServletRequestWrapper</code> class)
+ * <code>jakarta.servlet.ServletRequestWrapper</code> class)
  * back into an internal <code>org.apache.catalina.Request</code>.
  * <p>
  * <strong>WARNING</strong>:  Due to Java's lack of support for multiple
@@ -135,8 +133,9 @@ class ApplicationRequest extends ServletRequestWrapper {
 
         synchronized (attributes) {
             attributes.remove(name);
-            if (!isSpecial(name))
+            if (!isSpecial(name)) {
                 getRequest().removeAttribute(name);
+            }
         }
 
     }
@@ -154,8 +153,9 @@ class ApplicationRequest extends ServletRequestWrapper {
 
         synchronized (attributes) {
             attributes.put(name, value);
-            if (!isSpecial(name))
+            if (!isSpecial(name)) {
                 getRequest().setAttribute(name, value);
+            }
         }
 
     }
@@ -199,9 +199,10 @@ class ApplicationRequest extends ServletRequestWrapper {
      */
     protected boolean isSpecial(String name) {
 
-        for (int i = 0; i < specials.length; i++) {
-            if (specials[i].equals(name))
+        for (String special : specials) {
+            if (special.equals(name)) {
                 return true;
+            }
         }
         return false;
 

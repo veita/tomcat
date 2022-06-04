@@ -21,7 +21,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.servlet.ServletContext;
+import jakarta.servlet.ServletContext;
 
 import org.apache.juli.logging.Log;
 import org.apache.juli.logging.LogFactory;
@@ -46,7 +46,7 @@ public class DigesterFactory {
         CLASS_SERVLET_CONTEXT = ServletContext.class;
         Class<?> jspContext = null;
         try {
-            jspContext = Class.forName("javax.servlet.jsp.JspContext");
+            jspContext = Class.forName("jakarta.servlet.jsp.JspContext");
         } catch (ClassNotFoundException e) {
             // Ignore - JSP API is not present.
         }
@@ -124,6 +124,26 @@ public class DigesterFactory {
         add(systemIds, XmlIdentifiers.WEB_FRAGMENT_40_XSD, locationFor("web-fragment_4_0.xsd"));
         addSelf(systemIds, "web-common_4_0.xsd");
         addSelf(systemIds, "javaee_8.xsd");
+
+        // from JakartaEE 9
+        add(systemIds, XmlIdentifiers.WEB_50_XSD, locationFor("web-app_5_0.xsd"));
+        add(systemIds, XmlIdentifiers.WEB_FRAGMENT_50_XSD, locationFor("web-fragment_5_0.xsd"));
+        add(systemIds, XmlIdentifiers.TLD_30_XSD, locationFor("web-jsptaglibrary_3_0.xsd"));
+        addSelf(systemIds, "web-common_5_0.xsd");
+        addSelf(systemIds, "jakartaee_9.xsd");
+        addSelf(systemIds, "jsp_3_0.xsd");
+        addSelf(systemIds, "jakartaee_web_services_2_0.xsd");
+        addSelf(systemIds, "jakartaee_web_services_client_2_0.xsd");
+
+        // from JakartaEE 10
+        add(systemIds, XmlIdentifiers.WEB_60_XSD, locationFor("web-app_6_0.xsd"));
+        add(systemIds, XmlIdentifiers.WEB_FRAGMENT_60_XSD, locationFor("web-fragment_6_0.xsd"));
+        add(systemIds, XmlIdentifiers.TLD_31_XSD, locationFor("web-jsptaglibrary_3_1.xsd"));
+        addSelf(systemIds, "web-common_6_0.xsd");
+        addSelf(systemIds, "jakartaee_10.xsd");
+        addSelf(systemIds, "jsp_3_1.xsd");
+        addSelf(systemIds, "jakartaee_web_services_2_0.xsd");
+        addSelf(systemIds, "jakartaee_web_services_client_2_0.xsd");
 
         SERVLET_API_PUBLIC_IDS = Collections.unmodifiableMap(publicIds);
         SERVLET_API_SYSTEM_IDS = Collections.unmodifiableMap(systemIds);

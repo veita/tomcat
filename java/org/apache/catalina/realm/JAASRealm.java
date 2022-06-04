@@ -33,7 +33,8 @@ import javax.security.auth.login.CredentialExpiredException;
 import javax.security.auth.login.FailedLoginException;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
-import javax.servlet.http.HttpServletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.apache.catalina.Container;
 import org.apache.catalina.LifecycleException;
@@ -271,25 +272,30 @@ public class JAASRealm extends RealmBase {
      */
     protected void parseClassNames(String classNamesString, List<String> classNamesList) {
         classNamesList.clear();
-        if (classNamesString == null) return;
+        if (classNamesString == null) {
+            return;
+        }
 
         ClassLoader loader = this.getClass().getClassLoader();
-        if (isUseContextClassLoader())
+        if (isUseContextClassLoader()) {
             loader = Thread.currentThread().getContextClassLoader();
+        }
 
         String[] classNames = classNamesString.split("[ ]*,[ ]*");
-        for (int i=0; i<classNames.length; i++) {
-            if (classNames[i].length()==0) continue;
+        for (String className : classNames) {
+            if (className.length() == 0) {
+                continue;
+            }
             try {
-                Class<?> principalClass = Class.forName(classNames[i], false,
+                Class<?> principalClass = Class.forName(className, false,
                         loader);
                 if (Principal.class.isAssignableFrom(principalClass)) {
-                    classNamesList.add(classNames[i]);
+                    classNamesList.add(className);
                 } else {
-                    log.error(sm.getString("jaasRealm.notPrincipal", classNames[i]));
+                    log.error(sm.getString("jaasRealm.notPrincipal", className));
                 }
             } catch (ClassNotFoundException e) {
-                log.error(sm.getString("jaasRealm.classNotFound", classNames[i]));
+                log.error(sm.getString("jaasRealm.classNotFound", className));
             }
         }
     }
@@ -378,10 +384,13 @@ public class JAASRealm extends RealmBase {
         // Establish a LoginContext to use for authentication
         try {
             LoginContext loginContext = null;
-            if( appName==null ) appName="Tomcat";
+            if( appName==null ) {
+                appName="Tomcat";
+            }
 
-            if( log.isDebugEnabled())
+            if( log.isDebugEnabled()) {
                 log.debug(sm.getString("jaasRealm.beginLogin", username, appName));
+            }
 
             // What if the LoginModule is in the container class loader ?
             ClassLoader ocl = null;
@@ -409,8 +418,9 @@ public class JAASRealm extends RealmBase {
                 }
             }
 
-            if( log.isDebugEnabled())
+            if( log.isDebugEnabled()) {
                 log.debug("Login context created " + username);
+            }
 
             // Negotiate a login via this LoginContext
             Subject subject = null;
@@ -423,27 +433,31 @@ public class JAASRealm extends RealmBase {
                 // of the JAAS operation to keep variable consistent.
                 invocationSuccess = true;
                 if (subject == null) {
-                    if( log.isDebugEnabled())
+                    if( log.isDebugEnabled()) {
                         log.debug(sm.getString("jaasRealm.failedLogin", username));
+                    }
                     return null;
                 }
             } catch (AccountExpiredException e) {
-                if (log.isDebugEnabled())
+                if (log.isDebugEnabled()) {
                     log.debug(sm.getString("jaasRealm.accountExpired", username));
+                }
                 // JAAS checked LoginExceptions are successful authentication
                 // invocations so mark JAAS realm as available
                 invocationSuccess = true;
                 return null;
             } catch (CredentialExpiredException e) {
-                if (log.isDebugEnabled())
+                if (log.isDebugEnabled()) {
                     log.debug(sm.getString("jaasRealm.credentialExpired", username));
+                }
                 // JAAS checked LoginExceptions are successful authentication
                 // invocations so mark JAAS realm as available
                 invocationSuccess = true;
                 return null;
             } catch (FailedLoginException e) {
-                if (log.isDebugEnabled())
+                if (log.isDebugEnabled()) {
                     log.debug(sm.getString("jaasRealm.failedLogin", username));
+                }
                 // JAAS checked LoginExceptions are successful authentication
                 // invocations so mark JAAS realm as available
                 invocationSuccess = true;
@@ -463,8 +477,9 @@ public class JAASRealm extends RealmBase {
                 return null;
             }
 
-            if( log.isDebugEnabled())
+            if( log.isDebugEnabled()) {
                 log.debug(sm.getString("jaasRealm.loginContextCreated", username));
+            }
 
             // Return the appropriate Principal for this authenticated Subject
             Principal principal = createPrincipal(username, subject, loginContext);
@@ -572,7 +587,7 @@ public class JAASRealm extends RealmBase {
         }
 
         // Return the resulting Principal for our authenticated user
-        return new GenericPrincipal(username, null, roles, userPrincipal,
+        return new GenericPrincipal(username, roles, userPrincipal,
                 loginContext);
     }
 

@@ -14,8 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-
 package org.apache.catalina.manager;
 
 import java.io.File;
@@ -35,11 +33,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
-import javax.servlet.http.Part;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.Part;
 
 import org.apache.catalina.Container;
 import org.apache.catalina.Context;
@@ -284,17 +282,16 @@ public final class HTMLManagerServlet extends ManagerServlet {
                     break;
                 }
 
-                if (isServiced(name)) {
-                    message = smClient.getString("managerServlet.inService", name);
-                } else {
-                    addServiced(name);
+                if (tryAddServiced(name)) {
                     try {
                         warPart.write(file.getAbsolutePath());
-                        // Perform new deployment
-                        check(name);
                     } finally {
                         removeServiced(name);
                     }
+                    // Perform new deployment
+                    check(name);
+                } else {
+                    message = smClient.getString("managerServlet.inService", name);
                 }
                 break;
             }
@@ -342,19 +339,23 @@ public final class HTMLManagerServlet extends ManagerServlet {
                      String message,
                      StringManager smClient) throws IOException {
 
-        if (debug >= 1)
+        if (debug >= 1) {
             log("list: Listing contexts for virtual host '" +
                 host.getName() + "'");
+        }
 
         PrintWriter writer = response.getWriter();
 
-        // HTML Header Section
-        writer.print(Constants.HTML_HEADER_SECTION);
-
-        // Body Header Section
         Object[] args = new Object[2];
         args[0] = request.getContextPath();
         args[1] = smClient.getString("htmlManagerServlet.title");
+
+        // HTML Header Section
+        writer.print(MessageFormat.format(
+            Constants.HTML_HEADER_SECTION, args
+        ));
+
+        // Body Header Section
         writer.print(MessageFormat.format
                      (Constants.BODY_HEADER_SECTION, args));
 
@@ -401,8 +402,9 @@ public final class HTMLManagerServlet extends ManagerServlet {
         // Create sorted map of deployed applications by context name.
         Container children[] = host.findChildren();
         String contextNames[] = new String[children.length];
-        for (int i = 0; i < children.length; i++)
+        for (int i = 0; i < children.length; i++) {
             contextNames[i] = children[i].getName();
+        }
 
         Arrays.sort(contextNames);
 
@@ -440,10 +442,11 @@ public final class HTMLManagerServlet extends ManagerServlet {
                 StringBuilder tmp = new StringBuilder();
                 tmp.append("path=");
                 tmp.append(URLEncoder.DEFAULT.encode(displayPath, StandardCharsets.UTF_8));
-                if (ctxt.getWebappVersion().length() > 0) {
+                final String webappVersion = ctxt.getWebappVersion();
+                if (webappVersion != null && webappVersion.length() > 0) {
                     tmp.append("&version=");
                     tmp.append(URLEncoder.DEFAULT.encode(
-                            ctxt.getWebappVersion(), StandardCharsets.UTF_8));
+                            webappVersion, StandardCharsets.UTF_8));
                 }
                 String pathVersion = tmp.toString();
 
@@ -460,10 +463,10 @@ public final class HTMLManagerServlet extends ManagerServlet {
                         + URLEncoder.DEFAULT.encode(contextPath + "/", StandardCharsets.UTF_8)
                         + "\" " + Constants.REL_EXTERNAL + ">"
                         + Escape.htmlElementContent(displayPath) + "</a>";
-                if ("".equals(ctxt.getWebappVersion())) {
+                if (webappVersion == null || webappVersion.isEmpty()) {
                     args[1] = noVersion;
                 } else {
-                    args[1] = Escape.htmlElementContent(ctxt.getWebappVersion());
+                    args[1] = Escape.htmlElementContent(webappVersion);
                 }
                 if (ctxt.getDisplayName() == null) {
                     args[2] = "&nbsp;";
@@ -790,15 +793,15 @@ public final class HTMLManagerServlet extends ManagerServlet {
 
 
     /**
-     * @see javax.servlet.Servlet#getServletInfo()
+     * @see jakarta.servlet.Servlet#getServletInfo()
      */
     @Override
     public String getServletInfo() {
-        return "HTMLManagerServlet, Copyright (c) 1999-2020, The Apache Software Foundation";
+        return "HTMLManagerServlet, Copyright (c) 1999-2022, The Apache Software Foundation";
     }
 
     /**
-     * @see javax.servlet.GenericServlet#init()
+     * @see jakarta.servlet.GenericServlet#init()
      */
     @Override
     public void init() throws ServletException {
@@ -896,8 +899,7 @@ public final class HTMLManagerServlet extends ManagerServlet {
                     Escape.htmlElementContent(cn.getDisplayName())));
         }
         Manager manager = ctxt.getManager();
-        List<Session> sessions = new ArrayList<>();
-        sessions.addAll(Arrays.asList(manager.findSessions()));
+        List<Session> sessions = new ArrayList<>(Arrays.asList(manager.findSessions()));
         if (manager instanceof DistributedManager && showProxySessions) {
             // Add dummy proxy sessions
             Set<String> sessionIds =
@@ -918,7 +920,9 @@ public final class HTMLManagerServlet extends ManagerServlet {
             StringManager smClient) {
 
         List<Session> sessions = getSessionsForName(cn, smClient);
-        if (sessions.isEmpty()) return null;
+        if (sessions.isEmpty()) {
+            return null;
+        }
         for(Session session : sessions) {
             if (session.getId().equals(id)) {
                 return session;
@@ -954,7 +958,7 @@ public final class HTMLManagerServlet extends ManagerServlet {
                     orderBy = "DESC";
                 }
                 try {
-                    Collections.sort(sessions, comparator);
+                    sessions.sort(comparator);
                 } catch (IllegalStateException ise) {
                     // at least 1 of the sessions is invalidated
                     req.setAttribute(APPLICATION_ERROR, "Can't sort session list: one session is invalidated");
@@ -1016,10 +1020,9 @@ public final class HTMLManagerServlet extends ManagerServlet {
             return 0;
         }
         int nbAffectedSessions = 0;
-        for (int i = 0; i < sessionIds.length; ++i) {
-            String sessionId = sessionIds[i];
+        for (String sessionId : sessionIds) {
             HttpSession session =
-                getSessionForNameAndId(cn, sessionId, smClient).getSession();
+                    getSessionForNameAndId(cn, sessionId, smClient).getSession();
             if (null == session) {
                 // Shouldn't happen, but let's play nice...
                 if (debug >= 1) {

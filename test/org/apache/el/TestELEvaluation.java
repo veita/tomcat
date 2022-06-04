@@ -14,14 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.el;
 
 import java.io.File;
 import java.util.Date;
 
-import javax.el.ELException;
-import javax.el.ValueExpression;
+import jakarta.el.ELException;
+import jakarta.el.ValueExpression;
 
 import org.junit.Assert;
 import org.junit.Test;

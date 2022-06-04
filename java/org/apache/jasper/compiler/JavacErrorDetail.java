@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.jasper.compiler;
 
 import java.io.BufferedReader;
@@ -226,6 +225,6 @@ public class JavacErrorDetail {
             lines.add(line);
         }
 
-        return lines.toArray( new String[lines.size()] );
+        return lines.toArray(new String[0]);
     }
 }

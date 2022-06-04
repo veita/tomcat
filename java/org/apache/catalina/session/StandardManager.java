@@ -31,7 +31,7 @@ import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.servlet.ServletContext;
+import jakarta.servlet.ServletContext;
 
 import org.apache.catalina.Context;
 import org.apache.catalina.LifecycleException;
@@ -106,9 +106,9 @@ public class StandardManager extends ManagerBase {
      * A <code>null</code> value indicates that no persistence is desired.
      * If this pathname is relative, it will be resolved against the
      * temporary working directory provided by our context, available via
-     * the <code>javax.servlet.context.tempdir</code> context attribute.
+     * the <code>jakarta.servlet.context.tempdir</code> context attribute.
      */
-    protected String pathname = "SESSIONS.ser";
+    protected String pathname = null;
 
 
     // ------------------------------------------------------------- Properties
@@ -211,8 +211,9 @@ public class StandardManager extends ManagerBase {
                         getWarnOnSessionAttributeFilterFailure())) {
                     Integer count = (Integer) ois.readObject();
                     int n = count.intValue();
-                    if (log.isDebugEnabled())
+                    if (log.isDebugEnabled()) {
                         log.debug("Loading " + n + " persisted sessions");
+                    }
                     for (int i = 0; i < n; i++) {
                         StandardSession session = getNewSession();
                         session.readObjectData(ois);
@@ -278,8 +279,9 @@ public class StandardManager extends ManagerBase {
      */
     protected void doUnload() throws IOException {
 
-        if (log.isDebugEnabled())
+        if (log.isDebugEnabled()) {
             log.debug(sm.getString("standardManager.unloading.debug"));
+        }
 
         if (sessions.isEmpty()) {
             log.debug(sm.getString("standardManager.unloading.nosessions"));
@@ -387,8 +389,7 @@ public class StandardManager extends ManagerBase {
 
         // Expire all active sessions
         Session sessions[] = findSessions();
-        for (int i = 0; i < sessions.length; i++) {
-            Session session = sessions[i];
+        for (Session session : sessions) {
             try {
                 if (session.isValid()) {
                     session.expire();

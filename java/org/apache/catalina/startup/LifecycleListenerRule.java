@@ -14,8 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-
 package org.apache.catalina.startup;
 
 
@@ -104,8 +102,9 @@ public class LifecycleListenerRule extends Rule {
         // Check the container for the specified attribute
         if (attributeName != null) {
             String value = attributes.getValue(attributeName);
-            if (value != null)
+            if (value != null) {
                 className = value;
+            }
         }
 
         // Check the container's parent for the specified attribute
@@ -128,6 +127,12 @@ public class LifecycleListenerRule extends Rule {
 
         // Add this LifecycleListener to our associated component
         c.addLifecycleListener(listener);
+
+        StringBuilder code = digester.getGeneratedCode();
+        if (code != null) {
+            code.append(digester.toVariableName(c)).append(".addLifecycleListener(");
+            code.append("new ").append(className).append("());").append(System.lineSeparator());
+        }
     }
 
 

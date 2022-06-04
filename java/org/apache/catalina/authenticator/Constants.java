@@ -35,8 +35,7 @@ public class Constants {
     public static final String DEFAULT_LOGIN_MODULE_NAME = "com.sun.security.jgss.krb5.accept";
 
     // Cookie name for single sign on support
-    public static final String SINGLE_SIGN_ON_COOKIE = System.getProperty(
-            "org.apache.catalina.authenticator.Constants.SSO_SESSION_COOKIE_NAME", "JSESSIONIDSSO");
+    public static final String SINGLE_SIGN_ON_COOKIE = "JSESSIONIDSSO";
 
 
     // --------------------------------------------------------- Request Notes
@@ -80,14 +79,6 @@ public class Constants {
      * The following note keys are used during form login processing to
      * cache required information prior to the completion of authentication.
      */
-
-    /**
-     * The previously authenticated principal (if caching is disabled).
-     *
-     * @deprecated Unused. Will be removed in Tomcat 10.
-     */
-    @Deprecated
-    public static final String FORM_PRINCIPAL_NOTE = "org.apache.catalina.authenticator.PRINCIPAL";
 
     /**
      * The original request information, to which the user will be

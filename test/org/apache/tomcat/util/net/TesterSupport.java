@@ -42,10 +42,14 @@ import javax.net.ssl.X509ExtendedKeyManager;
 import javax.net.ssl.X509KeyManager;
 import javax.net.ssl.X509TrustManager;
 import javax.security.auth.x500.X500Principal;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import org.junit.Assert;
+import org.junit.Assume;
 
 import org.apache.catalina.Context;
 import org.apache.catalina.authenticator.SSLAuthenticator;
@@ -57,10 +61,11 @@ import org.apache.catalina.startup.Tomcat;
 import org.apache.tomcat.jni.Library;
 import org.apache.tomcat.jni.LibraryNotFoundError;
 import org.apache.tomcat.jni.SSL;
-import org.apache.tomcat.util.compat.JrePlatform;
 import org.apache.tomcat.util.descriptor.web.LoginConfig;
 import org.apache.tomcat.util.descriptor.web.SecurityCollection;
 import org.apache.tomcat.util.descriptor.web.SecurityConstraint;
+import org.apache.tomcat.util.net.SSLHostConfigCertificate.Type;
+import org.apache.tomcat.util.net.jsse.JSSEImplementation;
 
 public final class TesterSupport {
 
@@ -134,47 +139,32 @@ public final class TesterSupport {
     protected static void initSsl(Tomcat tomcat, String keystore,
             String keystorePass, String keyPass) {
 
-        String protocol = tomcat.getConnector().getProtocolHandlerClassName();
-        if (!protocol.contains("Apr")) {
-            Connector connector = tomcat.getConnector();
-            String sslImplementation = System.getProperty("tomcat.test.sslImplementation");
-            if (sslImplementation != null && !"${test.sslImplementation}".equals(sslImplementation)) {
-                StandardServer server = (StandardServer) tomcat.getServer();
-                AprLifecycleListener listener = new AprLifecycleListener();
-                listener.setSSLRandomSeed("/dev/urandom");
-                server.addLifecycleListener(listener);
-                tomcat.getConnector().setAttribute("sslImplementationName", sslImplementation);
-            }
-            connector.setProperty("sslProtocol", "tls");
-            File keystoreFile =
-                new File(keystore);
-            connector.setAttribute("keystoreFile",
-                    keystoreFile.getAbsolutePath());
-            File truststoreFile = new File(CA_JKS);
-            connector.setAttribute("truststoreFile",
-                    truststoreFile.getAbsolutePath());
-            if (keystorePass != null) {
-                connector.setAttribute("keystorePass", keystorePass);
-            }
-            if (keyPass != null) {
-                connector.setAttribute("keyPass", keyPass);
-            }
-        } else {
-            File keystoreFile = new File(
-                    LOCALHOST_RSA_CERT_PEM);
-            tomcat.getConnector().setAttribute("SSLCertificateFile",
-                    keystoreFile.getAbsolutePath());
-            keystoreFile = new File(
-                    LOCALHOST_RSA_KEY_PEM);
-            tomcat.getConnector().setAttribute("SSLCertificateKeyFile",
-                    keystoreFile.getAbsolutePath());
-            keystoreFile = new File(
-                    CA_CERT_PEM);
-            tomcat.getConnector().setAttribute("SSLCACertificateFile",
-                    keystoreFile.getAbsolutePath());
+        Connector connector = tomcat.getConnector();
+        connector.setSecure(true);
+        Assert.assertTrue(connector.setProperty("SSLEnabled", "true"));
+
+        SSLHostConfig sslHostConfig = new SSLHostConfig();
+        SSLHostConfigCertificate certificate = new SSLHostConfigCertificate(sslHostConfig, Type.UNDEFINED);
+        sslHostConfig.addCertificate(certificate);
+        connector.addSslHostConfig(sslHostConfig);
+
+        String sslImplementation = System.getProperty("tomcat.test.sslImplementation");
+        if (sslImplementation != null && !"${test.sslImplementation}".equals(sslImplementation)) {
+            StandardServer server = (StandardServer) tomcat.getServer();
+            AprLifecycleListener listener = new AprLifecycleListener();
+            listener.setSSLRandomSeed("/dev/urandom");
+            server.addLifecycleListener(listener);
+            Assert.assertTrue(connector.setProperty("sslImplementationName", sslImplementation));
         }
-        tomcat.getConnector().setSecure(true);
-        tomcat.getConnector().setProperty("SSLEnabled", "true");
+        sslHostConfig.setSslProtocol("tls");
+        certificate.setCertificateKeystoreFile(new File(keystore).getAbsolutePath());
+        sslHostConfig.setTruststoreFile(new File(CA_JKS).getAbsolutePath());
+        if (keystorePass != null) {
+            certificate.setCertificateKeystorePassword(keystorePass);
+        }
+        if (keyPass != null) {
+            certificate.setCertificateKeyPassword(keyPass);
+        }
     }
 
     protected static KeyManager[] getUser1KeyManagers() throws Exception {
@@ -201,10 +191,15 @@ public final class TesterSupport {
         return tmf.getTrustManagers();
     }
 
-    protected static ClientSSLSocketFactory configureClientSsl() {
+    public static ClientSSLSocketFactory configureClientSsl() {
         ClientSSLSocketFactory clientSSLSocketFactory = null;
         try {
-            SSLContext sc = SSLContext.getInstance(Constants.SSL_PROTO_TLS);
+            SSLContext sc;
+            if (TesterSupport.TLSV13_AVAILABLE) {
+                 sc = SSLContext.getInstance(Constants.SSL_PROTO_TLSv1_3);
+            } else {
+                sc = SSLContext.getInstance(Constants.SSL_PROTO_TLSv1_2);
+            }
             sc.init(TesterSupport.getUser1KeyManagers(),
                     TesterSupport.getTrustManagers(),
                     null);
@@ -225,36 +220,27 @@ public final class TesterSupport {
         return ks;
     }
 
-    protected static boolean isRenegotiationSupported(Tomcat tomcat) {
-        String protocol = tomcat.getConnector().getProtocolHandlerClassName();
-        if (protocol.contains("Apr")) {
-            // Disabled by default in 1.1.20 windows binary (2010-07-27)
-            return false;
-        }
-
-        return true;
-    }
-
     protected static boolean isClientRenegotiationSupported(Tomcat tomcat) {
-        String protocol = tomcat.getConnector().getProtocolHandlerClassName();
-        if (protocol.contains("Apr")) {
-            // Disabled by default in 1.1.20 windows binary (2010-07-27)
-            return false;
-        }
-        if (protocol.contains("NioProtocol") || (protocol.contains("Nio2Protocol") && JrePlatform.IS_MAC_OS)) {
-            // Doesn't work on all platforms - see BZ 56448.
-            return false;
-        }
-        String sslImplementation = System.getProperty("tomcat.test.sslImplementation");
-        if (sslImplementation != null && !"${test.sslImplementation}".equals(sslImplementation)) {
-            // Assume custom SSL is not supporting this
+        // Disabled for Tomcat Native (part of response to CVE-2009-3555)
+        // Only JRE provided JSSE implementation supports this
+        String sslImplementation = (String) tomcat.getConnector().getProperty("sslImplementationName");
+        if (!JSSEImplementation.class.getName().equals(sslImplementation)) {
             return false;
         }
 
         return true;
     }
 
-    protected static void configureClientCertContext(Tomcat tomcat) {
+    public static void configureSSLImplementation(Tomcat tomcat, String sslImplementationName) {
+        try {
+            Class.forName(sslImplementationName);
+        } catch (Exception e) {
+            Assume.assumeNoException(e);
+        }
+        Assert.assertTrue(tomcat.getConnector().setProperty("sslImplementationName", sslImplementationName));
+    }
+
+    public static void configureClientCertContext(Tomcat tomcat) {
         TesterSupport.initSsl(tomcat);
 
         /* When running on Java 11, TLSv1.3 is enabled by default. The JSSE
@@ -263,7 +249,7 @@ public final class TesterSupport {
          * depend. Therefore, force these tests to use TLSv1.2 so that they pass
          * when running on TLSv1.3.
          */
-        tomcat.getConnector().setProperty("sslEnabledProtocols", Constants.SSL_PROTO_TLSv1_2);
+        tomcat.getConnector().findSslHostConfigs()[0].setProtocols(Constants.SSL_PROTO_TLSv1_2);
 
         // Need a web application with a protected and unprotected URL
         // No file system docBase required
@@ -340,8 +326,9 @@ public final class TesterSupport {
     }
 
     protected static boolean checkLastClientAuthRequestedIssuers() {
-        if (lastRequestedIssuers == null || lastRequestedIssuers.length != 1)
-            return false;
+        if (lastRequestedIssuers == null || lastRequestedIssuers.length != 1) {
+          return false;
+        }
         return (new X500Principal(clientAuthExpectedIssuer)).equals(
                     new X500Principal(lastRequestedIssuers[0].getName()));
     }
@@ -383,10 +370,11 @@ public final class TesterSupport {
 
             // Report the number of bytes read
             resp.setContentType("text/plain");
-            if (contentOK)
-                resp.getWriter().print("OK-" + read);
-            else
-                resp.getWriter().print("CONTENT-MISMATCH-" + read);
+            if (contentOK) {
+              resp.getWriter().print("OK-" + read);
+            } else {
+              resp.getWriter().print("CONTENT-MISMATCH-" + read);
+            }
         }
     }
 
@@ -659,37 +647,5 @@ public final class TesterSupport {
             }
             return socket;
         }
-    }
-
-
-    /*
-     * We want to use TLS 1.3 where we can but this requires TLS 1.3 to be
-     * supported on the client and the server.
-     */
-    public static String getDefaultTLSProtocolForTesting(Connector connector) {
-        // Clients always use JSSE
-        if (!TLSV13_AVAILABLE) {
-            // Client doesn't support TLS 1.3 so we have to use TLS 1.2
-            return Constants.SSL_PROTO_TLSv1_2;
-        }
-
-        if (connector.getProtocolHandlerClassName().contains("Apr")) {
-            // APR connector so OpenSSL is used for TLS.
-            if (SSL.version() >= 0x1010100f) {
-                return Constants.SSL_PROTO_TLSv1_3;
-            } else {
-                return Constants.SSL_PROTO_TLSv1_2;
-            }
-        } else {
-            // NIO or NIO2. Tests do not use JSSE+OpenSSL so JSSE will be used.
-            // Due to check above, it is known that TLS 1.3 is available
-            return Constants.SSL_PROTO_TLSv1_3;
-        }
-    }
-
-
-    public static boolean isDefaultTLSProtocolForTesting13(Connector connector) {
-        return Constants.SSL_PROTO_TLSv1_3.equals(
-                TesterSupport.getDefaultTLSProtocolForTesting(connector));
     }
 }

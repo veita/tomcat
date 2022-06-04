@@ -18,7 +18,7 @@ package org.apache.catalina.authenticator;
 
 import java.io.IOException;
 
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.apache.catalina.connector.Request;
 
@@ -93,8 +93,9 @@ public final class NonLoginAuthenticator extends AuthenticatorBase {
         // to say the user is now authenticated because access to
         // protected resources will only be allowed with a matching role.
         // i.e. SC_FORBIDDEN (403 status) will be generated later.
-        if (containerLog.isDebugEnabled())
+        if (containerLog.isDebugEnabled()) {
             containerLog.debug("User authenticated without any roles");
+        }
         return true;
     }
 

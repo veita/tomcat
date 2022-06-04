@@ -27,11 +27,11 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.Locale;
 
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 /**
  * Servlet to process SSI requests within a webpage. Mapped to a path from
  * within web.xml.
@@ -70,27 +70,31 @@ public class SSIServlet extends HttpServlet {
     @Override
     public void init() throws ServletException {
 
-        if (getServletConfig().getInitParameter("debug") != null)
+        if (getServletConfig().getInitParameter("debug") != null) {
             debug = Integer.parseInt(getServletConfig().getInitParameter("debug"));
+        }
 
         isVirtualWebappRelative =
             Boolean.parseBoolean(getServletConfig().getInitParameter("isVirtualWebappRelative"));
 
-        if (getServletConfig().getInitParameter("expires") != null)
+        if (getServletConfig().getInitParameter("expires") != null) {
             expires = Long.valueOf(getServletConfig().getInitParameter("expires"));
+        }
 
         buffered = Boolean.parseBoolean(getServletConfig().getInitParameter("buffered"));
 
         inputEncoding = getServletConfig().getInitParameter("inputEncoding");
 
-        if (getServletConfig().getInitParameter("outputEncoding") != null)
+        if (getServletConfig().getInitParameter("outputEncoding") != null) {
             outputEncoding = getServletConfig().getInitParameter("outputEncoding");
+        }
 
         allowExec = Boolean.parseBoolean(
                 getServletConfig().getInitParameter("allowExec"));
 
-        if (debug > 0)
+        if (debug > 0) {
             log("SSIServlet.init() SSI invoker started with 'debug'=" + debug);
+        }
 
     }
 
@@ -110,7 +114,9 @@ public class SSIServlet extends HttpServlet {
     @Override
     public void doGet(HttpServletRequest req, HttpServletResponse res)
             throws IOException, ServletException {
-        if (debug > 0) log("SSIServlet.doGet()");
+        if (debug > 0) {
+            log("SSIServlet.doGet()");
+        }
         requestHandler(req, res);
     }
 
@@ -131,7 +137,9 @@ public class SSIServlet extends HttpServlet {
     @Override
     public void doPost(HttpServletRequest req, HttpServletResponse res)
             throws IOException, ServletException {
-        if (debug > 0) log("SSIServlet.doPost()");
+        if (debug > 0) {
+            log("SSIServlet.doPost()");
+        }
         requestHandler(req, res);
     }
 
@@ -149,20 +157,21 @@ public class SSIServlet extends HttpServlet {
             HttpServletResponse res) throws IOException {
         ServletContext servletContext = getServletContext();
         String path = SSIServletRequestUtil.getRelativePath(req);
-        if (debug > 0)
+        if (debug > 0) {
             log("SSIServlet.requestHandler()\n" + "Serving "
                     + (buffered?"buffered ":"unbuffered ") + "resource '"
                     + path + "'");
+        }
         // Exclude any resource in the /WEB-INF and /META-INF subdirectories
         // (the "toUpperCase()" avoids problems on Windows systems)
         if (path == null || path.toUpperCase(Locale.ENGLISH).startsWith("/WEB-INF")
                 || path.toUpperCase(Locale.ENGLISH).startsWith("/META-INF")) {
-            res.sendError(HttpServletResponse.SC_NOT_FOUND, path);
+            res.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;
         }
         URL resource = servletContext.getResource(path);
         if (resource == null) {
-            res.sendError(HttpServletResponse.SC_NOT_FOUND, path);
+            res.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;
         }
         String resourceMimeType = servletContext.getMimeType(path);

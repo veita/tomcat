@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.jasper.servlet;
 
 import java.io.FileNotFoundException;
@@ -25,13 +24,13 @@ import java.security.AccessController;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletConfig;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.apache.jasper.Constants;
 import org.apache.jasper.EmbeddedServletOptions;
@@ -128,13 +127,10 @@ public class JspServlet extends HttpServlet implements PeriodicEventListener {
             }
             try {
                 if (SecurityUtil.isPackageProtectionEnabled()){
-                   AccessController.doPrivileged(new PrivilegedExceptionAction<Object>(){
-                        @Override
-                        public Object run() throws IOException, ServletException {
-                            serviceJspFile(null, null, jspFile, true);
-                            return null;
-                        }
-                    });
+                   AccessController.doPrivileged((PrivilegedExceptionAction<Object>) () -> {
+                       serviceJspFile(null, null, jspFile, true);
+                       return null;
+                   });
                 } else {
                     serviceJspFile(null, null, jspFile, true);
                 }
@@ -142,7 +138,9 @@ public class JspServlet extends HttpServlet implements PeriodicEventListener {
                 throw new ServletException(Localizer.getMessage("jsp.error.precompilation", jspFile), e);
             } catch (PrivilegedActionException e) {
                 Throwable t = e.getCause();
-                if (t instanceof ServletException) throw (ServletException)t;
+                if (t instanceof ServletException) {
+                    throw (ServletException)t;
+                }
                 throw new ServletException(Localizer.getMessage("jsp.error.precompilation", jspFile), e);
             }
         }
@@ -234,16 +232,17 @@ public class JspServlet extends HttpServlet implements PeriodicEventListener {
      */
     boolean preCompile(HttpServletRequest request) throws ServletException {
 
+        String precompileParameter = rctxt.getOptions().getJspPrecompilationQueryParameter();
         String queryString = request.getQueryString();
         if (queryString == null) {
             return false;
         }
-        int start = queryString.indexOf(Constants.PRECOMPILE);
+        int start = queryString.indexOf(precompileParameter);
         if (start < 0) {
             return false;
         }
         queryString =
-            queryString.substring(start + Constants.PRECOMPILE.length());
+            queryString.substring(start + precompileParameter.length());
         if (queryString.length() == 0) {
             return true;             // ?jsp_precompile
         }
@@ -270,7 +269,7 @@ public class JspServlet extends HttpServlet implements PeriodicEventListener {
             return true;             // ?jsp_precompile=false
         } else {
             throw new ServletException(Localizer.getMessage("jsp.error.precompilation.parameter",
-                    Constants.PRECOMPILE, value));
+                    precompileParameter, value));
         }
 
     }
@@ -294,7 +293,7 @@ public class JspServlet extends HttpServlet implements PeriodicEventListener {
                 /*
                  * Requested JSP has been target of
                  * RequestDispatcher.include(). Its path is assembled from the
-                 * relevant javax.servlet.include.* request attributes
+                 * relevant jakarta.servlet.include.* request attributes
                  */
                 String pathInfo = (String) request.getAttribute(
                         RequestDispatcher.INCLUDE_PATH_INFO);
@@ -327,11 +326,7 @@ public class JspServlet extends HttpServlet implements PeriodicEventListener {
         try {
             boolean precompile = preCompile(request);
             serviceJspFile(request, response, jspUri, precompile);
-        } catch (RuntimeException e) {
-            throw e;
-        } catch (ServletException e) {
-            throw e;
-        } catch (IOException e) {
+        } catch (RuntimeException | IOException | ServletException e) {
             throw e;
         } catch (Throwable e) {
             ExceptionUtils.handleThrowable(e);
@@ -397,21 +392,18 @@ public class JspServlet extends HttpServlet implements PeriodicEventListener {
         String includeRequestUri =
             (String)request.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI);
 
+        String msg = Localizer.getMessage("jsp.error.file.not.found",jspUri);
         if (includeRequestUri != null) {
             // This file was included. Throw an exception as
             // a response.sendError() will be ignored
-            String msg =
-                Localizer.getMessage("jsp.error.file.not.found",jspUri);
             // Strictly, filtering this is an application
             // responsibility but just in case...
             throw new ServletException(Escape.htmlElementContent(msg));
         } else {
             try {
-                response.sendError(HttpServletResponse.SC_NOT_FOUND,
-                        request.getRequestURI());
+                response.sendError(HttpServletResponse.SC_NOT_FOUND, msg);
             } catch (IllegalStateException ise) {
-                log.error(Localizer.getMessage("jsp.error.file.not.found",
-                        jspUri));
+                log.error(msg);
             }
         }
     }

@@ -98,7 +98,7 @@ public class ContextRuleSet implements RuleSet {
                     "org.apache.catalina.core.StandardContext", "className");
             digester.addSetProperties(prefix + "Context");
         } else {
-            digester.addRule(prefix + "Context", new SetContextPropertiesRule());
+            digester.addSetProperties(prefix + "Context", new String[]{"path", "docBase"});
         }
 
         if (create) {
@@ -167,6 +167,14 @@ public class ContextRuleSet implements RuleSet {
         digester.addSetNext(prefix + "Context/Resources",
                             "setResources",
                             "org.apache.catalina.WebResourceRoot");
+
+        digester.addObjectCreate(prefix + "Context/Resources/CacheStrategy",
+                                 null, // MUST be specified in the element
+                                 "className");
+        digester.addSetProperties(prefix + "Context/Resources/CacheStrategy");
+        digester.addSetNext(prefix + "Context/Resources/CacheStrategy",
+                            "setCacheStrategy",
+                            "org.apache.catalina.WebResourceRoot$CacheStrategy");
 
         digester.addObjectCreate(prefix + "Context/Resources/PreResources",
                                  null, // MUST be specified in the element

@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import javax.servlet.http.MappingMatch;
+import jakarta.servlet.http.MappingMatch;
 
 import org.apache.catalina.Context;
 import org.apache.catalina.Host;
@@ -554,8 +554,8 @@ public final class Mapper {
                 if (removeMap(oldWrappers, newWrappers, name)) {
                     // Recalculate nesting
                     context.nesting = 0;
-                    for (int i = 0; i < newWrappers.length; i++) {
-                        int slashCount = slashCount(newWrappers[i].name);
+                    for (MappedWrapper newWrapper : newWrappers) {
+                        int slashCount = slashCount(newWrapper.name);
                         if (slashCount > context.nesting) {
                             context.nesting = slashCount;
                         }
@@ -730,7 +730,8 @@ public final class Mapper {
 
     /**
      * Map the specified URI.
-     * @throws IOException
+     * @throws IOException If an error occurs while manipulating the URI during
+     *         the mapping
      */
     private final void internalMap(CharChunk host, CharChunk uri,
             String version, MappingData mappingData) throws IOException {
@@ -821,8 +822,6 @@ public final class Mapper {
         if (context == null) {
             return;
         }
-
-        mappingData.contextPath.setString(context.name);
 
         ContextVersion contextVersion = null;
         ContextVersion[] contextVersions = context.versions;
@@ -1074,8 +1073,6 @@ public final class Mapper {
                 // Special handling for Context Root mapped servlet
                 mappingData.pathInfo.setString("/");
                 mappingData.wrapperPath.setString("");
-                // This seems wrong but it is what the spec says...
-                mappingData.contextPath.setString("");
                 mappingData.matchType = MappingMatch.CONTEXT_ROOT;
             } else {
                 mappingData.wrapperPath.setString(wrapper.name);

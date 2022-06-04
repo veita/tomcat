@@ -18,20 +18,20 @@ package org.apache.catalina.core;
 
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-import javax.servlet.SessionTrackingMode;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
-import javax.servlet.http.PushBuilder;
+import jakarta.servlet.SessionTrackingMode;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.PushBuilder;
 
 import org.apache.catalina.Context;
 import org.apache.catalina.authenticator.AuthenticatorBase;
@@ -140,29 +140,23 @@ public class ApplicationPushBuilder implements PushBuilder {
 
         // Cookies
         if (request.getCookies() != null) {
-            for (Cookie requestCookie : request.getCookies()) {
-                cookies.add(requestCookie);
-            }
+            cookies.addAll(Arrays.asList(request.getCookies()));
         }
         for (Cookie responseCookie : catalinaRequest.getResponse().getCookies()) {
             if (responseCookie.getMaxAge() < 0) {
                 // Path information not available so can only remove based on
                 // name.
-                Iterator<Cookie> cookieIterator = cookies.iterator();
-                while (cookieIterator.hasNext()) {
-                    Cookie cookie = cookieIterator.next();
-                    if (cookie.getName().equals(responseCookie.getName())) {
-                        cookieIterator.remove();
-                    }
-                }
+                cookies.removeIf(cookie -> cookie.getName().equals(responseCookie.getName()));
             } else {
                 cookies.add(new Cookie(responseCookie.getName(), responseCookie.getValue()));
             }
         }
-        List<String> cookieValues = new ArrayList<>(1);
-        cookieValues.add(generateCookieHeader(cookies,
-                catalinaRequest.getContext().getCookieProcessor()));
-        headers.put("cookie", cookieValues);
+        if (cookies.size() > 0) {
+            List<String> cookieValues = new ArrayList<>(1);
+            cookieValues.add(generateCookieHeader(cookies,
+                    catalinaRequest.getContext().getCookieProcessor()));
+            headers.put("cookie", cookieValues);
+        }
 
         // Authentication
         if (catalinaRequest.getPrincipal() != null) {
@@ -207,11 +201,8 @@ public class ApplicationPushBuilder implements PushBuilder {
                     sm.getString("applicationPushBuilder.methodInvalid", upperMethod));
         }
         // Check a token was supplied
-        for (char c : upperMethod.toCharArray()) {
-            if (!HttpParser.isToken(c)) {
-                throw new IllegalArgumentException(
-                        sm.getString("applicationPushBuilder.methodNotToken", upperMethod));
-            }
+        if (!HttpParser.isToken(upperMethod)) {
+            throw new IllegalArgumentException(sm.getString("applicationPushBuilder.methodNotToken", upperMethod));
         }
         this.method = method;
         return this;
@@ -439,7 +430,7 @@ public class ApplicationPushBuilder implements PushBuilder {
             // However, if passed a Cookie with just a name and value set it
             // will generate an appropriate header for the Cookie header on the
             // pushed request.
-            result.append(cookieProcessor.generateHeader(cookie));
+            result.append(cookieProcessor.generateHeader(cookie, null));
         }
         return result.toString();
     }

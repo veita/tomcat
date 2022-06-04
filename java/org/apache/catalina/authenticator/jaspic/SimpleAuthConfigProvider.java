@@ -19,24 +19,25 @@ package org.apache.catalina.authenticator.jaspic;
 import java.util.Map;
 
 import javax.security.auth.callback.CallbackHandler;
-import javax.security.auth.message.AuthException;
-import javax.security.auth.message.config.AuthConfigFactory;
-import javax.security.auth.message.config.AuthConfigProvider;
-import javax.security.auth.message.config.ClientAuthConfig;
-import javax.security.auth.message.config.ServerAuthConfig;
+
+import jakarta.security.auth.message.AuthException;
+import jakarta.security.auth.message.config.AuthConfigFactory;
+import jakarta.security.auth.message.config.AuthConfigProvider;
+import jakarta.security.auth.message.config.ClientAuthConfig;
+import jakarta.security.auth.message.config.ServerAuthConfig;
 
 /**
  * Basic implementation primarily intended for use when using third-party
- * {@link javax.security.auth.message.module.ServerAuthModule} implementations
+ * {@link jakarta.security.auth.message.module.ServerAuthModule} implementations
  * that only provide the module.
  */
 public class SimpleAuthConfigProvider implements AuthConfigProvider {
 
-    private final Map<String,String> properties;
+    private final Map<String,Object> properties;
 
     private volatile ServerAuthConfig serverAuthConfig;
 
-    public SimpleAuthConfigProvider(Map<String,String> properties, AuthConfigFactory factory) {
+    public SimpleAuthConfigProvider(Map<String,Object> properties, AuthConfigFactory factory) {
         this.properties = properties;
         if (factory != null) {
             factory.registerConfigProvider(this, null, null, "Automatic registration");
@@ -74,7 +75,7 @@ public class SimpleAuthConfigProvider implements AuthConfigProvider {
 
 
     protected ServerAuthConfig createServerAuthConfig(String layer, String appContext,
-            CallbackHandler handler, Map<String,String> properties) {
+            CallbackHandler handler, Map<String,Object> properties) {
         return new SimpleServerAuthConfig(layer, appContext, handler, properties);
     }
 

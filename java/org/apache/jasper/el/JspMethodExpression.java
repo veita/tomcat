@@ -21,12 +21,13 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
-import javax.el.ELContext;
-import javax.el.ELException;
-import javax.el.MethodExpression;
-import javax.el.MethodInfo;
-import javax.el.MethodNotFoundException;
-import javax.el.PropertyNotFoundException;
+import jakarta.el.ELContext;
+import jakarta.el.ELException;
+import jakarta.el.MethodExpression;
+import jakarta.el.MethodInfo;
+import jakarta.el.MethodNotFoundException;
+import jakarta.el.MethodReference;
+import jakarta.el.PropertyNotFoundException;
 
 public final class JspMethodExpression extends MethodExpression implements
         Externalizable {
@@ -54,13 +55,19 @@ public final class JspMethodExpression extends MethodExpression implements
             context.notifyAfterEvaluation(getExpressionString());
             return result;
         } catch (MethodNotFoundException e) {
-            if (e instanceof JspMethodNotFoundException) throw e;
+            if (e instanceof JspMethodNotFoundException) {
+                throw e;
+            }
             throw new JspMethodNotFoundException(this.mark, e);
         } catch (PropertyNotFoundException e) {
-            if (e instanceof JspPropertyNotFoundException) throw e;
+            if (e instanceof JspPropertyNotFoundException) {
+                throw e;
+            }
             throw new JspPropertyNotFoundException(this.mark, e);
         } catch (ELException e) {
-            if (e instanceof JspELException) throw e;
+            if (e instanceof JspELException) {
+                throw e;
+            }
             throw new JspELException(this.mark, e);
         }
     }
@@ -75,15 +82,51 @@ public final class JspMethodExpression extends MethodExpression implements
             context.notifyAfterEvaluation(getExpressionString());
             return result;
         } catch (MethodNotFoundException e) {
-            if (e instanceof JspMethodNotFoundException) throw e;
+            if (e instanceof JspMethodNotFoundException) {
+                throw e;
+            }
             throw new JspMethodNotFoundException(this.mark, e);
         } catch (PropertyNotFoundException e) {
-            if (e instanceof JspPropertyNotFoundException) throw e;
+            if (e instanceof JspPropertyNotFoundException) {
+                throw e;
+            }
             throw new JspPropertyNotFoundException(this.mark, e);
         } catch (ELException e) {
-            if (e instanceof JspELException) throw e;
+            if (e instanceof JspELException) {
+                throw e;
+            }
             throw new JspELException(this.mark, e);
         }
+    }
+
+    @Override
+    public MethodReference getMethodReference(ELContext context) {
+        context.notifyBeforeEvaluation(getExpressionString());
+        try {
+            MethodReference result = this.target.getMethodReference(context);
+            context.notifyAfterEvaluation(getExpressionString());
+            return result;
+        } catch (MethodNotFoundException e) {
+            if (e instanceof JspMethodNotFoundException) {
+                throw e;
+            }
+            throw new JspMethodNotFoundException(this.mark, e);
+        } catch (PropertyNotFoundException e) {
+            if (e instanceof JspPropertyNotFoundException) {
+                throw e;
+            }
+            throw new JspPropertyNotFoundException(this.mark, e);
+        } catch (ELException e) {
+            if (e instanceof JspELException) {
+                throw e;
+            }
+            throw new JspELException(this.mark, e);
+        }
+    }
+
+    @Override
+    public boolean isParametersProvided() {
+        return this.target.isParametersProvided();
     }
 
     @Override

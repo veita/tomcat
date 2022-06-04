@@ -22,8 +22,8 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-import javax.el.ELContext;
-import javax.el.ELResolver;
+import jakarta.el.ELContext;
+import jakarta.el.ELResolver;
 
 public class StreamELResolverImpl extends ELResolver {
 
@@ -48,6 +48,7 @@ public class StreamELResolverImpl extends ELResolver {
         return false;
     }
 
+    @Deprecated(forRemoval = true, since = "Tomcat 10.1.0")
     @Override
     public Iterator<FeatureDescriptor> getFeatureDescriptors(ELContext context,
             Object base) {

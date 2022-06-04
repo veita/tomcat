@@ -14,8 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-
 package org.apache.catalina.startup;
 
 import org.apache.catalina.Context;
@@ -92,10 +90,12 @@ public class SetNextNamingRule extends Rule {
         // Identify the objects to be used
         Object child = digester.peek(0);
         Object parent = digester.peek(1);
+        boolean context = false;
 
         NamingResourcesImpl namingResources = null;
         if (parent instanceof Context) {
             namingResources = ((Context) parent).getNamingResources();
+            context = true;
         } else {
             namingResources = (NamingResourcesImpl) parent;
         }
@@ -104,6 +104,17 @@ public class SetNextNamingRule extends Rule {
         IntrospectionUtils.callMethod1(namingResources, methodName,
                 child, paramType, digester.getClassLoader());
 
+        StringBuilder code = digester.getGeneratedCode();
+        if (code != null) {
+            if (context) {
+                code.append(digester.toVariableName(parent)).append(".getNamingResources()");
+            } else {
+                code.append(digester.toVariableName(namingResources));
+            }
+            code.append(".").append(methodName).append('(');
+            code.append(digester.toVariableName(child)).append(");");
+            code.append(System.lineSeparator());
+        }
     }
 
 
@@ -117,7 +128,7 @@ public class SetNextNamingRule extends Rule {
         sb.append(methodName);
         sb.append(", paramType=");
         sb.append(paramType);
-        sb.append("]");
+        sb.append(']');
         return sb.toString();
     }
 

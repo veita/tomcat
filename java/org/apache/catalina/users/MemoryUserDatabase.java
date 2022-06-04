@@ -17,6 +17,7 @@
 package org.apache.catalina.users;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -424,7 +425,7 @@ public class MemoryUserDatabase implements UserDatabase {
 
             String pathName = getPathname();
             try (ConfigurationSource.Resource resource = ConfigFileLoader.getSource().getResource(pathName)) {
-                this.lastModified = resource.getURI().toURL().openConnection().getLastModified();
+                lastModified = resource.getLastModified();
 
                 // Construct a digester to read the XML input file
                 Digester digester = new Digester();
@@ -527,7 +528,7 @@ public class MemoryUserDatabase implements UserDatabase {
      *
      * @return <code>true</code> if the database is writable
      */
-    public boolean isWriteable() {
+    public boolean isWritable() {
 
         File file = new File(pathname);
         if (!file.isAbsolute()) {
@@ -552,7 +553,7 @@ public class MemoryUserDatabase implements UserDatabase {
             return;
         }
 
-        if (!isWriteable()) {
+        if (!isWritable()) {
             log.warn(sm.getString("memoryUserDatabase.notPersistable"));
             return;
         }
@@ -683,6 +684,11 @@ public class MemoryUserDatabase implements UserDatabase {
                 try {
                     // Can't close a uConn directly. Have to do it like this.
                     uConn.getInputStream().close();
+                } catch (FileNotFoundException fnfe) {
+                    // The file doesn't exist.
+                    // This has been logged above. No need to log again.
+                    // Set the last modified time to avoid repeated log messages
+                    this.lastModified = 0;
                 } catch (IOException ioe) {
                     log.warn(sm.getString("memoryUserDatabase.fileClose", pathname), ioe);
                 }
@@ -706,7 +712,7 @@ public class MemoryUserDatabase implements UserDatabase {
         sb.append(this.roles.size());
         sb.append(",userCount=");
         sb.append(this.users.size());
-        sb.append("]");
+        sb.append(']');
         return sb.toString();
     }
 }
@@ -730,7 +736,14 @@ class MemoryGroupCreationFactory extends AbstractObjectCreationFactory {
         }
         String description = attributes.getValue("description");
         String roles = attributes.getValue("roles");
-        Group group = database.createGroup(groupname, description);
+        Group group = database.findGroup(groupname);
+        if (group == null) {
+            group = database.createGroup(groupname, description);
+        } else {
+            if (group.getDescription() == null) {
+                group.setDescription(description);
+            }
+        }
         if (roles != null) {
             while (roles.length() > 0) {
                 String rolename = null;
@@ -775,8 +788,14 @@ class MemoryRoleCreationFactory extends AbstractObjectCreationFactory {
             rolename = attributes.getValue("name");
         }
         String description = attributes.getValue("description");
-        Role role = database.createRole(rolename, description);
-        return role;
+        Role existingRole = database.findRole(rolename);
+        if (existingRole == null) {
+            return database.createRole(rolename, description);
+        }
+        if (existingRole.getDescription() == null) {
+            existingRole.setDescription(description);
+        }
+        return existingRole;
     }
 
     private final MemoryUserDatabase database;

@@ -14,7 +14,6 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-
 package org.apache.catalina.filters;
 
 import java.io.ByteArrayInputStream;
@@ -22,7 +21,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -108,17 +107,7 @@ public class TestCsrfPreventionFilter extends TomcatBaseTest {
         }
 
         @Override
-        public String encodeRedirectUrl(String url) {
-            return url;
-        }
-
-        @Override
         public String encodeURL(String url) {
-            return url;
-        }
-
-        @Override
-        public String encodeUrl(String url) {
             return url;
         }
     }

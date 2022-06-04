@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.jasper;
 
 /**
@@ -23,7 +22,7 @@ package org.apache.jasper;
  *
  * @author Anil K. Vijendran
  */
-public class JasperException extends javax.servlet.ServletException {
+public class JasperException extends jakarta.servlet.ServletException {
 
     private static final long serialVersionUID = 1L;
 

@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.tomcat.util.modeler.modules;
 
 import java.lang.reflect.Method;
@@ -73,11 +72,15 @@ public class MbeansDescriptorsIntrospectionSource extends ModelerSource
     }
 
     public void execute() throws Exception {
-        if( registry==null ) registry=Registry.getRegistry(null, null);
+        if( registry==null ) {
+            registry=Registry.getRegistry(null, null);
+        }
         try {
             ManagedBean managed = createManagedBean(registry, null,
                     (Class<?>)source, type);
-            if( managed==null ) return;
+            if( managed==null ) {
+                return;
+            }
             managed.setName( type );
 
             registry.addManagedBean(managed);
@@ -131,8 +134,8 @@ public class MbeansDescriptorsIntrospectionSource extends ModelerSource
      * @return boolean True if class is supported
      */
     private boolean supportedType(Class<?> ret) {
-        for (int i = 0; i < supportedTypes.length; i++) {
-            if (ret == supportedTypes[i]) {
+        for (Class<?> supportedType : supportedTypes) {
+            if (ret == supportedType) {
                 return true;
             }
         }
@@ -195,76 +198,76 @@ public class MbeansDescriptorsIntrospectionSource extends ModelerSource
             Hashtable<String,Method> getAttMap, Hashtable<String,Method> setAttMap,
             Hashtable<String,Method> invokeAttMap) {
 
-        for (int j = 0; j < methods.length; ++j) {
-            String name = methods[j].getName();
+        for (Method method : methods) {
+            String name = method.getName();
 
-            if (Modifier.isStatic(methods[j].getModifiers())) {
+            if (Modifier.isStatic(method.getModifiers())) {
                 continue;
             }
-            if (!Modifier.isPublic(methods[j].getModifiers())) {
+            if (!Modifier.isPublic(method.getModifiers())) {
                 if (log.isDebugEnabled()) {
-                    log.debug("Not public " + methods[j] );
+                    log.debug("Not public " + method);
                 }
                 continue;
             }
-            if (methods[j].getDeclaringClass() == Object.class) {
+            if (method.getDeclaringClass() == Object.class) {
                 continue;
             }
-            Class<?> params[] = methods[j].getParameterTypes();
+            Class<?> params[] = method.getParameterTypes();
 
-            if (name.startsWith("get") && params.length==0) {
-                Class<?> ret = methods[j].getReturnType();
+            if (name.startsWith("get") && params.length == 0) {
+                Class<?> ret = method.getReturnType();
                 if (!supportedType(ret)) {
                     if (log.isDebugEnabled()) {
-                        log.debug("Unsupported type " + methods[j]);
+                        log.debug("Unsupported type " + method);
                     }
                     continue;
                 }
-                name=unCapitalize(name.substring(3));
+                name = unCapitalize(name.substring(3));
 
-                getAttMap.put(name, methods[j]);
+                getAttMap.put(name, method);
                 // just a marker, we don't use the value
-                attMap.put(name, methods[j]);
-            } else if(name.startsWith("is") && params.length == 0) {
-                Class<?> ret = methods[j].getReturnType();
+                attMap.put(name, method);
+            } else if (name.startsWith("is") && params.length == 0) {
+                Class<?> ret = method.getReturnType();
                 if (Boolean.TYPE != ret) {
                     if (log.isDebugEnabled()) {
-                        log.debug("Unsupported type " + methods[j] + " " + ret );
+                        log.debug("Unsupported type " + method + " " + ret);
                     }
                     continue;
                 }
                 name = unCapitalize(name.substring(2));
 
-                getAttMap.put(name, methods[j]);
+                getAttMap.put(name, method);
                 // just a marker, we don't use the value
-                attMap.put(name, methods[j]);
+                attMap.put(name, method);
 
             } else if (name.startsWith("set") && params.length == 1) {
                 if (!supportedType(params[0])) {
                     if (log.isDebugEnabled()) {
-                        log.debug("Unsupported type " + methods[j] + " " + params[0]);
+                        log.debug("Unsupported type " + method + " " + params[0]);
                     }
                     continue;
                 }
                 name = unCapitalize(name.substring(3));
-                setAttMap.put(name, methods[j]);
-                attMap.put(name, methods[j]);
+                setAttMap.put(name, method);
+                attMap.put(name, method);
             } else {
                 if (params.length == 0) {
-                    if (specialMethods.get(methods[j].getName()) != null) {
+                    if (specialMethods.get(method.getName()) != null) {
                         continue;
                     }
-                    invokeAttMap.put(name, methods[j]);
+                    invokeAttMap.put(name, method);
                 } else {
                     boolean supported = true;
-                    for (int i = 0; i < params.length; i++ ) {
-                        if (!supportedType(params[i])) {
+                    for (Class<?> param : params) {
+                        if (!supportedType(param)) {
                             supported = false;
                             break;
                         }
                     }
                     if (supported) {
-                        invokeAttMap.put( name, methods[j]);
+                        invokeAttMap.put(name, method);
                     }
                 }
             }
@@ -315,26 +318,33 @@ public class MbeansDescriptorsIntrospectionSource extends ModelerSource
                     //ai.setGetMethodObj( gm );
                     ai.setGetMethod( gm.getName());
                     Class<?> t=gm.getReturnType();
-                    if( t!=null )
+                    if( t!=null ) {
                         ai.setType( t.getName() );
+                    }
                 }
                 Method sm = setAttMap.get(name);
                 if( sm!=null ) {
                     //ai.setSetMethodObj(sm);
                     Class<?> t = sm.getParameterTypes()[0];
-                    if( t!=null )
+                    if( t!=null ) {
                         ai.setType( t.getName());
+                    }
                     ai.setSetMethod( sm.getName());
                 }
                 ai.setDescription("Introspected attribute " + name);
-                if( log.isDebugEnabled()) log.debug("Introspected attribute " +
-                        name + " " + gm + " " + sm);
-                if( gm==null )
+                if( log.isDebugEnabled()) {
+                    log.debug("Introspected attribute " +
+                            name + " " + gm + " " + sm);
+                }
+                if( gm==null ) {
                     ai.setReadable(false);
-                if( sm==null )
+                }
+                if( sm==null ) {
                     ai.setWriteable(false);
-                if( sm!=null || gm!=null )
+                }
+                if( sm!=null || gm!=null ) {
                     mbean.addAttribute(ai);
+                }
             }
 
             // This map is populated by iterating the methods (which end up as
@@ -359,8 +369,9 @@ public class MbeansDescriptorsIntrospectionSource extends ModelerSource
                 mbean.addOperation(op);
             }
 
-            if( log.isDebugEnabled())
+            if( log.isDebugEnabled()) {
                 log.debug("Setting name: " + type );
+            }
             mbean.setName( type );
 
             return mbean;
